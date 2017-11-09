@@ -1,0 +1,36 @@
+[package]
+authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
+name = "fontfinder"
+version = "1.0.0"
+
+[[bin]]
+name = "fontfinder"
+path = "src/bin/mod.rs"
+
+[dependencies]
+horrorshow = "0.6.2"
+lazy_static = "0.2"
+reqwest = "0.8"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+
+[dependencies.derive-fail]
+git = "https://github.com/withoutboats/derive-fail"
+
+[dependencies.failure]
+git = "https://github.com/withoutboats/failure"
+
+[dependencies.gio]
+git = "https://github.com/gtk-rs/gio.git"
+
+[dependencies.gtk]
+features = ["v3_22"]
+git = "https://github.com/gtk-rs/gtk.git"
+
+[dependencies.webkit2gtk]
+features = ["v2_16"]
+git = "https://github.com/gtk-rs/webkit2gtk-rs.git"
+
+[lib]
+path = "src/lib/mod.rs"
