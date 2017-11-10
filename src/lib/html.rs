@@ -15,12 +15,14 @@ pub fn generate<F: Fn(&str)>(family: &str, size: f64, text: &str, closure: F) {
                 head {
                     link(rel="stylesheet", href=&get_font_url(family)) { }
                     style {
-                        : format!("body {{ font-size: {}em; font-family: {}; }}", size, family)
+                        : format!("body {{ font-size: {}em; font-family: {}; }}", size, family);
+                        : "html { margin: 0; border: 0; padding: 0 }";
+                        : "p { margin: .5em }"
                     }
                 }
                 body {
-                    p {
-                        : text;
+                    @ for line in text.lines() {
+                        p { : line }
                     }
                 }
             }
