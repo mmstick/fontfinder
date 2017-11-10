@@ -6,15 +6,15 @@ use webkit2gtk::*;
 
 #[derive(Clone)]
 pub struct Main {
-    pub container:   Paned,
-    pub categories:  ComboBoxText,
-    pub fonts_box:   ListBox,
-    pub fonts:       Rc<RefCell<Vec<FontRow>>>,
-    pub context:     WebContext,
-    pub view:        WebView,
-    pub sample_text: TextView,
+    pub container:     Paned,
+    pub categories:    ComboBoxText,
+    pub fonts_box:     ListBox,
+    pub fonts:         Rc<RefCell<Vec<FontRow>>>,
+    pub context:       WebContext,
+    pub view:          WebView,
+    pub sample_text:   TextView,
     pub sample_buffer: TextBuffer,
-    pub search:      SearchEntry,
+    pub search:        SearchEntry,
 }
 
 impl Main {
@@ -91,7 +91,7 @@ impl Main {
             view,
             sample_text,
             search,
-            sample_buffer: buffer
+            sample_buffer: buffer,
         }
     }
 }
@@ -115,5 +115,12 @@ impl FontRow {
             category,
             family,
         }
+    }
+
+    pub fn set_visibility(&self, visibility: bool) { self.container.set_visible(visibility); }
+
+    pub fn contains(&self, pattern: &str) -> bool {
+        // TODO: do this without making any allocations.
+        self.family.to_lowercase().contains(&pattern.to_lowercase())
     }
 }

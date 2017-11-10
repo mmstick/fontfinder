@@ -6,8 +6,10 @@ extern crate webkit2gtk;
 mod gtk_ui;
 
 use fontfinder::{dirs, fonts, html, FontError};
+use fontfinder::fonts::FontsList;
 use gtk::*;
 use gtk_ui::{App, FontRow};
+use std::path::Path;
 use std::process;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -19,6 +21,14 @@ fn main() {
         eprintln!("failed to initialize GTK Application");
         process::exit(1);
     }
+
+    let local_font_path = match dirs::font_cache().ok_or(FontError::FontDirectory) {
+        Ok(path) => Arc::new(path),
+        Err(why) => {
+            eprintln!("failed to get font archive: {}", why);
+            process::exit(1);
+        }
+    };
 
     // Grab the information on Google's archive of free fonts.
     // I'm wrapping it in Arc so it can be shared across multiple closures.
@@ -55,33 +65,32 @@ fn main() {
         let size = app.header.font_size.clone();
         let row_id = current_row_id.clone();
         let fonts_archive = fonts_archive.clone();
-        list.connect_row_selected(move |_, row| if let Some(row) = row.clone() {
-            let id = row.get_index() as usize;
-            row_id.store(id, Ordering::SeqCst);
-            let font = &(*rows.borrow())[id];
-            title.set_title(font.family.as_str());
-            if let Some(sample_text) = get_text(&sample) {
-                html::generate(
-                    &font.family,
-                    size.get_value(),
-                    &sample_text,
-                    |html| preview.load_html(html, None),
-                );
-            }
-
-            match dirs::font_cache().ok_or(FontError::FontDirectory) {
-                Ok(path) => {
-                    let font = fonts_archive.get_family(&font.family).unwrap();
-                    let font_exists = font.files.iter().all(
-                        |(variant, uri)| dirs::font_exists(&path, &font.family, &variant, &uri)
-                    );
-                    install.set_visible(!font_exists);
-                    uninstall.set_visible(font_exists);
+        list.connect_row_selected(move |_, row| {
+            if let Some(row) = row.clone() {
+                let id = row.get_index() as usize;
+                row_id.store(id, Ordering::SeqCst);
+                let font = &(*rows.borrow())[id];
+                title.set_title(font.family.as_str());
+                if let Some(sample_text) = get_text(&sample) {
+                    html::generate(&font.family, size.get_value(), &sample_text, |html| {
+                        preview.load_html(html, None)
+                    });
                 }
-                Err(why) => {
-                    eprintln!("fontfinder: unable to get font cache: {}", why);
-                    install.set_visible(false);
-                    uninstall.set_visible(false);
+
+                match dirs::font_cache().ok_or(FontError::FontDirectory) {
+                    Ok(path) => {
+                        let font = fonts_archive.get_family(&font.family).unwrap();
+                        let font_exists = font.files.iter().all(
+                            |(variant, uri)| dirs::font_exists(&path, &font.family, &variant, &uri),
+                        );
+                        install.set_visible(!font_exists);
+                        uninstall.set_visible(font_exists);
+                    }
+                    Err(why) => {
+                        eprintln!("fontfinder: unable to get font cache: {}", why);
+                        install.set_visible(false);
+                        uninstall.set_visible(false);
+                    }
                 }
             }
         });
@@ -132,8 +141,15 @@ fn main() {
         let category = app.main.categories.clone();
         let rows = app.main.fonts.clone();
         let search = app.main.search.clone();
-        category.connect_changed(move |category| if let Some(text) = category.get_active_text() {
-            filter_category(&text, get_search(&search), &rows.borrow());
+        let path = local_font_path.clone();
+        let archive = fonts_archive.clone();
+        let installed = app.header.show_installed.clone();
+        category.connect_changed(move |category| {
+            if let Some(category) = category.get_active_text() {
+                filter_category(&category, get_search(&search), &rows.borrow(), |family| {
+                    !installed.get_active() || !is_installed(&archive, family, &path)
+                });
+            }
         });
     }
 
@@ -142,11 +158,33 @@ fn main() {
         let category = app.main.categories.clone();
         let rows = app.main.fonts.clone();
         let search = app.main.search.clone();
-        search.connect_search_changed(
-            move |search| if let Some(text) = category.get_active_text() {
-                filter_category(&text, get_search(&search), &rows.borrow());
-            },
-        );
+        let path = local_font_path.clone();
+        let archive = fonts_archive.clone();
+        let installed = app.header.show_installed.clone();
+        search.connect_search_changed(move |search| {
+            if let Some(category) = category.get_active_text() {
+                filter_category(&category, get_search(&search), &rows.borrow(), |family| {
+                    installed.get_active() || !is_installed(&archive, family, &path)
+                });
+            }
+        });
+    }
+
+    {
+        // Filters fonts when the show_installed checkbox is toggled.
+        let category = app.main.categories.clone();
+        let rows = app.main.fonts.clone();
+        let search = app.main.search.clone();
+        let path = local_font_path.clone();
+        let archive = fonts_archive.clone();
+        let installed = app.header.show_installed.clone();
+        installed.connect_toggled(move |installed| {
+            if let Some(category) = category.get_active_text() {
+                filter_category(&category, get_search(&search), &rows.borrow(), |family| {
+                    installed.get_active() || !is_installed(&archive, family, &path)
+                });
+            }
+        });
     }
 
     {
@@ -195,21 +233,15 @@ fn main() {
 }
 
 /// Filters visibility of associated font ListBoxRow's, according to a given category filter.
-fn filter_category(category: &str, search: Option<String>, fonts: &[FontRow]) {
-    match search {
-        Some(ref search) if category == "All" => fonts.iter().for_each(
-            |font| font.container.set_visible(font.family.to_lowercase().contains(search)),
-        ),
-        Some(ref search) => fonts.iter().for_each(|font| {
-            font.container.set_visible(
-                &font.category == category && font.family.to_lowercase().contains(search),
-            )
-        }),
-        None if category == "All" => fonts.iter().for_each(|font| font.container.set_visible(true)),
-        None => {
-            fonts.iter().for_each(|font| font.container.set_visible(&font.category == category))
-        }
-    }
+fn filter_category<F>(category: &str, search: Option<String>, fonts: &[FontRow], installed: F)
+    where F: Fn(&str) -> bool
+{
+    fonts.iter().for_each(|font| {
+        let visible = (category == "All" || &font.category == category)
+            && search.as_ref().map_or(true, |s| font.contains(s.as_str()));
+
+        font.set_visibility(visible && installed(&font.family));
+    })
 }
 
 /// Attempt to get the text from thhe given `TextView`'s `TextBuffer`.
@@ -222,9 +254,16 @@ fn get_buffer(buffer: &TextBuffer) -> Option<String> {
 }
 
 fn get_search(search: &SearchEntry) -> Option<String> {
-    match search.get_text() {
+    match search.get_text().take() {
         Some(ref text) if text.is_empty() => None,
-        Some(ref text) => Some(text.to_lowercase()),
+        Some(text) => Some(text),
         None => None,
     }
+}
+
+fn is_installed(archive: &FontsList, family: &str, path: &Path) -> bool {
+    let font = archive.get_family(&family).unwrap();
+    font.files
+        .iter()
+        .all(|(variant, uri)| dirs::font_exists(path, family, variant.as_str(), uri.as_str()))
 }

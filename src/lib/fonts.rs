@@ -52,7 +52,7 @@ impl FontsList {
         // Find the given font in the font list and return it's reference.
         let font = self.get_family(family).ok_or(FontError::FontNotFound)?;
 
-        // Download/install each variant of the given font family.
+        // Remove each variant of the given font family.
         for (variant, uri) in &font.files {
             // Create a variant of the path with this variant's filename.
             let path = dirs::get_font_path(&path, family, &variant, &uri);
@@ -67,7 +67,9 @@ impl FontsList {
 
     /// Obtain a reference to the given font family's information, if it exists.
     pub fn get_family<'a>(&'a self, family: &str) -> Option<&'a Font> {
-        self.items.iter().find(|&font| font.family.as_str() == family)
+        self.items
+            .iter()
+            .find(|&font| font.family.as_str() == family)
     }
 
     /// Sift through the font list and collect all unique categories found.
@@ -100,4 +102,3 @@ pub struct Font {
 }
 
 pub fn obtain() -> reqwest::Result<FontsList> { reqwest::get(URL.as_str())?.json() }
-
