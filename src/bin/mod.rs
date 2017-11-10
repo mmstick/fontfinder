@@ -194,12 +194,14 @@ fn main() {
         let row_id = current_row_id.clone();
         let rows = app.main.fonts.clone();
         let fonts_archive = fonts_archive.clone();
+        let installed = app.header.show_installed.clone();
         install.connect_clicked(move |install| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
             match fonts_archive.download(&font.family) {
                 Ok(_) => {
                     install.set_visible(false);
                     uninstall.set_visible(true);
+                    font.container.set_visible(installed.get_active());
                 }
                 Err(why) => eprintln!("fontfinder: unable to install font: {}", why),
             }
