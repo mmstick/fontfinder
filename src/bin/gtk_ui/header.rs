@@ -20,6 +20,14 @@ impl Header {
         let install = Button::new_with_label("Install");
         let uninstall = Button::new_with_label("Uninstall");
 
+        // Set styles for those buttons.
+        install
+            .get_style_context()
+            .map(|context| context.add_class("suggested-action"));
+        uninstall
+            .get_style_context()
+            .map(|context| context.add_class("destructive-action"));
+
         // Add a font size spin button.
         let font_size = SpinButton::new(&Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0), 0.1, 2);
         let show_installed = CheckButton::new_with_label("Installed");
