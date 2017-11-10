@@ -1,3 +1,4 @@
+use super::set_margin;
 use fontfinder::fonts::Font;
 use gtk::*;
 use std::cell::RefCell;
@@ -37,6 +38,7 @@ impl Main {
 
         // The category menu for filtering based on category.
         let menu = ComboBoxText::new();
+        set_margin(&menu, 5, 5, 5, 5);
         menu.insert_text(0, "All");
         for (id, category) in categories.iter().enumerate() {
             menu.insert_text((id + 1) as i32, category.as_str());
@@ -45,11 +47,11 @@ impl Main {
 
         // Search bar beneath the category menu for doing name-based filters.
         let search = SearchEntry::new();
+        set_margin(&search, 0, 5, 5, 5);
 
         // Construct the left pane's box
         let lbox = Box::new(Orientation::Vertical, 0);
         lbox.pack_start(&menu, false, false, 0);
-        lbox.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
         lbox.pack_start(&search, false, false, 0);
         lbox.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
         lbox.pack_start(&scroller, true, true, 0);

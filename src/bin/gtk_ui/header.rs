@@ -1,3 +1,4 @@
+use super::set_margin;
 use gtk::*;
 
 #[derive(Clone)]
@@ -37,6 +38,7 @@ impl Header {
         let menu_box = Box::new(Orientation::Vertical, 5);
         menu_box.pack_start(&Label::new("Show"), true, false, 0);
         menu_box.pack_start(&show_installed, true, false, 0);
+        set_margin(&menu_box, 5, 5, 5, 5);
 
         // Create the popover menu for the settings menu button.
         let popover = PopoverMenu::new();
