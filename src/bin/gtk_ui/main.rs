@@ -73,7 +73,7 @@ impl Main {
 
         let sample_text = TextView::new_with_buffer(&buffer);
         sample_text.set_wrap_mode(WrapMode::Word);
-        set_margin(&sample_text, 5, 5, 5, 5);
+        set_view_margins(&sample_text);
 
         let rbox = Box::new(Orientation::Vertical, 0);
         rbox.pack_start(&sample_text, false, false, 0);
@@ -85,7 +85,7 @@ impl Main {
         let tview = TextView::new_with_buffer(&terminal);
         let label = Label::new("Console Output");
         set_margin(&label, 5, 5, 5, 5);
-        set_margin(&tview, 5, 5, 5, 5);
+        set_view_margins(&tview);
 
         tview.set_editable(false);
         tscroller.add(&tview);
@@ -146,4 +146,11 @@ impl FontRow {
         // TODO: do this without making any allocations.
         self.family.to_lowercase().contains(&pattern.to_lowercase())
     }
+}
+
+fn set_view_margins(view: &TextView) {
+    view.set_top_margin(5);
+    view.set_right_margin(5);
+    view.set_bottom_margin(5);
+    view.set_left_margin(5);
 }
