@@ -11,6 +11,7 @@ use gtk::*;
 use gtk_ui::{App, FontRow};
 use std::path::Path;
 use std::process;
+use std::str;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use webkit2gtk::*;
@@ -195,13 +196,18 @@ fn main() {
         let rows = app.main.fonts.clone();
         let fonts_archive = fonts_archive.clone();
         let installed = app.header.show_installed.clone();
+        let console = app.main.terminal.clone();
         install.connect_clicked(move |install| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
-            match fonts_archive.download(&font.family) {
+            let mut string = Vec::new();
+            match fonts_archive.download(&mut string, &font.family) {
                 Ok(_) => {
                     install.set_visible(false);
                     uninstall.set_visible(true);
                     font.container.set_visible(installed.get_active());
+                    if let Ok(string) = str::from_utf8(&string) {
+                        update_console(&console, string);
+                    }
                 }
                 Err(why) => eprintln!("fontfinder: unable to install font: {}", why),
             }
@@ -215,12 +221,17 @@ fn main() {
         let row_id = current_row_id.clone();
         let rows = app.main.fonts.clone();
         let fonts_archive = fonts_archive.clone();
+        let console = app.main.terminal.clone();
         uninstall.connect_clicked(move |uninstall| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
-            match fonts_archive.remove(&font.family) {
+            let mut string = Vec::new();
+            match fonts_archive.remove(&mut string, &font.family) {
                 Ok(_) => {
                     uninstall.set_visible(false);
                     install.set_visible(true);
+                    if let Ok(string) = str::from_utf8(&string) {
+                        update_console(&console, string);
+                    }
                 }
                 Err(why) => eprintln!("fontfinder: unable to remove font: {}", why),
             }
@@ -268,4 +279,8 @@ fn is_installed(archive: &FontsList, family: &str, path: &Path) -> bool {
     font.files
         .iter()
         .all(|(variant, uri)| dirs::font_exists(path, family, variant.as_str(), uri.as_str()))
+}
+
+fn update_console(console: &TextBuffer, message: &str) {
+    console.insert(&mut console.get_end_iter(), &message)
 }
