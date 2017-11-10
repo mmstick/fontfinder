@@ -15,6 +15,7 @@ pub struct App {
 
 impl App {
     pub fn new(font_archive: &FontsList, categories: &[String]) -> App {
+        Window::set_default_icon_name("typecatcher");
         let window = Window::new(WindowType::Toplevel);
         let header = Header::new();
         let main = Main::new(&font_archive.items, categories);

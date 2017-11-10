@@ -109,15 +109,11 @@ impl FontRow {
         let label = Label::new("");
         label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
         label.set_justify(Justification::Left);
-
-        // Workaround to get the labels to be left justified.
-        let lbox = Box::new(Orientation::Horizontal, 0);
-        lbox.pack_start(&label, false, false, 0);
-        lbox.pack_start(&Layout::new(None, None), true, true, 0);
+        label.set_halign(Align::Start);
 
         // Store the label within the list box row.
         let container = ListBoxRow::new();
-        container.add(&lbox);
+        container.add(&label);
 
         FontRow {
             container,
