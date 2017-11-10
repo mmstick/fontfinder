@@ -105,11 +105,20 @@ pub struct FontRow {
 
 impl FontRow {
     pub fn new(category: String, family: String) -> FontRow {
-        let container = ListBoxRow::new();
+        // Create the inner label of the row that contains the family in bold.
         let label = Label::new("");
         label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
         label.set_justify(Justification::Left);
-        container.add(&label);
+
+        // Workaround to get the labels to be left justified.
+        let lbox = Box::new(Orientation::Horizontal, 0);
+        lbox.pack_start(&label, false, false, 0);
+        lbox.pack_start(&Layout::new(None, None), true, true, 0);
+
+        // Store the label within the list box row.
+        let container = ListBoxRow::new();
+        container.add(&lbox);
+
         FontRow {
             container,
             category,
