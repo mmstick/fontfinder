@@ -125,6 +125,7 @@ fn main() {
     let path = local_font_path;
     let show_installed = app.header.show_installed;
 
+    // A macro that's shared among each action that triggers an update of the preview.
     macro_rules! update_preview {
         ($value:tt, $method:tt) => {{
             let sample = sample.clone();
@@ -148,10 +149,14 @@ fn main() {
         }}
     }
 
+    // Triggers when the font size spin button's value is changed.
     update_preview!(size, connect_property_value_notify);
+    // Triggers when the dark preview check button is toggled.
     update_preview!(dark_preview, connect_toggled);
+    // Triggers when the sample text is changed.
     update_preview!(sample, connect_changed);
 
+    // A macro that's shared among each action that triggers font filtration.
     macro_rules! filter_fonts {
         ($value:tt, $method:tt) => {{
             let category = category.clone();
@@ -171,8 +176,11 @@ fn main() {
         }}
     }
 
+    // Triggers when the category combo box is changed.
     filter_fonts!(category, connect_changed);
+    // Triggers when the search entry is changed.
     filter_fonts!(search, connect_search_changed);
+    // Triggers when the show installed button is toggled.
     filter_fonts!(show_installed, connect_toggled);
 
     {
