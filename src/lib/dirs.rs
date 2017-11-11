@@ -1,5 +1,11 @@
 use std::env;
 use std::path::{Path, PathBuf};
+use std::fs::DirBuilder;
+use std::io;
+
+pub fn make_rec_dir(dir: &Path) -> io::Result<()> {
+  DirBuilder::new().recursive(true).create(dir)
+}
 
 pub fn font_cache() -> Option<PathBuf> {
     env::home_dir().map(|path| path.join(".local/share/fonts/"))
