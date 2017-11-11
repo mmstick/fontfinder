@@ -56,7 +56,7 @@ fn main() {
 
     {
         // Updates the UI when a row is selected.
-        let sample = app.main.sample_text.clone();
+        let sample = app.main.sample_buffer.clone();
         let preview = app.main.view.clone();
         let rows = app.main.fonts.clone();
         let list = app.main.fonts_box.clone();
@@ -80,13 +80,14 @@ fn main() {
                 title.set_title(font.family.as_str());
 
                 // If there is some sample text, update the font preview.
-                if let Some(sample_text) = get_text(&sample) {
+                if let Some(sample_text) = get_buffer(&sample) {
                     html::generate(
                         &font.family,
+                        &font.variants,
                         size.get_value(),
-                        &sample_text,
+                        &sample_text[..],
                         dark_preview.get_active(),
-                        |html| preview.load_html(html, None)
+                        |html| preview.load_html(html, None),
                     );
                 }
 
@@ -137,8 +138,10 @@ fn main() {
             #[allow(unused)]
             $value.$method(move |$value| {
                 get_buffer(&sample).map(|sample| {
+                    let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
                     html::generate(
-                        &(*rows.borrow())[row_id.load(Ordering::SeqCst)].family,
+                        &font.family,
+                        &font.variants[..],
                         size.get_value(),
                         &sample,
                         dark_preview.get_active(),
@@ -204,7 +207,7 @@ fn main() {
                 }
                 Err(why) => {
                     update_console(&console, &format!("unable to install font: {}\n", why));
-                },
+                }
             }
         });
     }
@@ -228,7 +231,7 @@ fn main() {
                 }
                 Err(why) => {
                     update_console(&console, &format!("unable to remove font: {}\n", why));
-                },
+                }
             }
         });
     }
@@ -251,9 +254,6 @@ fn filter_category<F>(category: &str, search: Option<String>, fonts: &[FontRow],
         font.set_visibility(visible && installed(&font.family));
     })
 }
-
-/// Attempt to get the text from thhe given `TextView`'s `TextBuffer`.
-fn get_text(view: &TextView) -> Option<String> { view.get_buffer().and_then(|x| get_buffer(&x)) }
 
 fn get_buffer(buffer: &TextBuffer) -> Option<String> {
     let start = buffer.get_start_iter();

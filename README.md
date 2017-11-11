@@ -21,15 +21,18 @@ cargo install --git https://github.com/mmstick/fontfinder
 
 ## Screenshots
 
-### Default
+### Filtering w/ Search
 
 ![First Screenshot](screenshot01.png)
 
-### Filtering Fonts w/ Search
+### Filtering w/ Category
 
 ![Second Screenshot](screenshot02.png)
 
-### Filtering Fonts w/ Category
+### Multiple Paragraphs
 
 ![Third Screenshot](screenshot03.png)
 
+### Dark Preview
+
+![Fourth Screenshot](screenshot04.png)

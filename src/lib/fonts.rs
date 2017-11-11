@@ -1,4 +1,5 @@
 use {dirs, FontError};
+use itertools::Itertools;
 use reqwest::{self, Client};
 use std::collections::HashMap;
 use std::fs::{self, OpenOptions};
@@ -80,20 +81,17 @@ impl FontsList {
 
     /// Obtain a reference to the given font family's information, if it exists.
     pub fn get_family<'a>(&'a self, family: &str) -> Option<&'a Font> {
-        self.items
-            .iter()
-            .find(|&font| font.family.as_str() == family)
+        self.items.iter().find(|f| f.family.as_str() == family)
     }
 
     /// Sift through the font list and collect all unique categories found.
     pub fn get_categories(&self) -> Vec<String> {
-        let mut output: Vec<String> = Vec::with_capacity(12);
-        for font in &self.items {
-            if !output.contains(&font.category) {
-                output.push(font.category.to_owned());
-            }
-        }
-        output
+        self.items
+            .iter()
+            .map(|f| f.category.as_str())
+            .unique()
+            .map(String::from)
+            .collect()
     }
 }
 

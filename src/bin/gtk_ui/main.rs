@@ -28,7 +28,11 @@ impl Main {
         let fonts_box = ListBox::new();
         let mut fonts = Vec::with_capacity(fonts_archive.len());
         for font in fonts_archive {
-            let row = FontRow::new(font.category.clone(), font.family.clone());
+            let row = FontRow::new(
+                font.category.clone(),
+                font.family.clone(),
+                font.files.keys().cloned().collect(),
+            );
             fonts_box.insert(&row.container, -1);
             fonts.push(row);
         }
@@ -118,10 +122,11 @@ pub struct FontRow {
     pub container: ListBoxRow,
     pub category:  String,
     pub family:    String,
+    pub variants:  Vec<String>,
 }
 
 impl FontRow {
-    pub fn new(category: String, family: String) -> FontRow {
+    pub fn new(category: String, family: String, variants: Vec<String>) -> FontRow {
         // Create the inner label of the row that contains the family in bold.
         let label = Label::new("");
         label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
@@ -136,6 +141,7 @@ impl FontRow {
             container,
             category,
             family,
+            variants,
         }
     }
 

@@ -66,7 +66,7 @@ impl Header {
             install,
             uninstall,
             show_installed,
-            dark_preview
+            dark_preview,
         }
     }
 }

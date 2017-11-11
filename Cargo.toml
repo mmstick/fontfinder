@@ -9,17 +9,18 @@ path = "src/bin/mod.rs"
 
 [dependencies]
 horrorshow = "0.6.2"
+itertools = "0.7.2"
 lazy_static = "0.2"
 reqwest = "0.8"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 
-[dependencies.failure_derive]
-git = "https://github.com/withoutboats/failure_derive"
-
 [dependencies.failure]
 git = "https://github.com/withoutboats/failure"
+
+[dependencies.failure_derive]
+git = "https://github.com/withoutboats/failure_derive"
 
 [dependencies.gio]
 git = "https://github.com/gtk-rs/gio.git"
