@@ -148,7 +148,7 @@ fn main() {
         category.connect_changed(move |category| {
             if let Some(category) = category.get_active_text() {
                 filter_category(&category, get_search(&search), &rows.borrow(), |family| {
-                    !installed.get_active() || !is_installed(&archive, family, &path)
+                    installed.get_active() || !is_installed(&archive, family, &path)
                 });
             }
         });
