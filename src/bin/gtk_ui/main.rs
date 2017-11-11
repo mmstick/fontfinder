@@ -125,7 +125,6 @@ impl FontRow {
         // Create the inner label of the row that contains the family in bold.
         let label = Label::new("");
         label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
-        label.set_justify(Justification::Left);
         label.set_halign(Align::Start);
         label.set_margin_top(5);
 

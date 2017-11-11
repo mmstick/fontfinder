@@ -66,29 +66,42 @@ fn main() {
         let size = app.header.font_size.clone();
         let row_id = current_row_id.clone();
         let fonts_archive = fonts_archive.clone();
+        let console = app.main.terminal.clone();
         list.connect_row_selected(move |_, row| {
-            if let Some(row) = row.clone() {
+            if let Some(row) = row.as_ref() {
+                // Get the ID of the currently-selected row.
                 let id = row.get_index() as usize;
+                // Store that ID in an atomic value, for future re-use by other closures.
                 row_id.store(id, Ordering::SeqCst);
+                // Obtain the data relevant to the selected row, by it's ID.
                 let font = &(*rows.borrow())[id];
+                // Set the header bar's title the name of the font.
                 title.set_title(font.family.as_str());
+
+                // If there is some sample text, update the font preview.
                 if let Some(sample_text) = get_text(&sample) {
                     html::generate(&font.family, size.get_value(), &sample_text, |html| {
                         preview.load_html(html, None)
                     });
                 }
 
+                // Then set the visibility of the Install & Uninstall buttons accordingly.
                 match dirs::font_cache().ok_or(FontError::FontDirectory) {
                     Ok(path) => {
+                        // Obtain the font from the font archive, so that we may get the files.
                         let font = fonts_archive.get_family(&font.family).unwrap();
+                        // This returns true if all variants of the font exists.
                         let font_exists = font.files.iter().all(
                             |(variant, uri)| dirs::font_exists(&path, &font.family, &variant, &uri),
                         );
+
                         install.set_visible(!font_exists);
                         uninstall.set_visible(font_exists);
                     }
                     Err(why) => {
-                        eprintln!("fontfinder: unable to get font cache: {}", why);
+                        // Write the error to stderr & the console.
+                        update_console(&console, &format!("unable to get font cache: {}\n", why));
+
                         install.set_visible(false);
                         uninstall.set_visible(false);
                     }
@@ -105,15 +118,14 @@ fn main() {
         let size = app.header.font_size.clone();
         let row_id = current_row_id.clone();
         size.connect_property_value_notify(move |size| {
-            let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
-            if let Some(sample_text) = get_buffer(&sample) {
+            get_buffer(&sample).map(|sample| {
                 html::generate(
-                    &font.family,
+                    &(*rows.borrow())[row_id.load(Ordering::SeqCst)].family,
                     size.get_value(),
-                    &sample_text,
+                    &sample,
                     |html| preview.load_html(html, None),
-                );
-            }
+                )
+            });
         });
     }
 
@@ -125,15 +137,14 @@ fn main() {
         let size = app.header.font_size.clone();
         let row_id = current_row_id.clone();
         sample.connect_changed(move |sample| {
-            let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
-            if let Some(sample_text) = get_buffer(&sample) {
+            get_buffer(&sample).map(|sample| {
                 html::generate(
-                    &font.family,
+                    &(*rows.borrow())[row_id.load(Ordering::SeqCst)].family,
                     size.get_value(),
-                    &sample_text,
+                    &sample,
                     |html| preview.load_html(html, None),
-                );
-            }
+                )
+            });
         });
     }
 
@@ -205,11 +216,11 @@ fn main() {
                     install.set_visible(false);
                     uninstall.set_visible(true);
                     font.container.set_visible(installed.get_active());
-                    if let Ok(string) = str::from_utf8(&string) {
-                        update_console(&console, string);
-                    }
+                    let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
                 }
-                Err(why) => eprintln!("fontfinder: unable to install font: {}", why),
+                Err(why) => {
+                    update_console(&console, &format!("unable to install font: {}\n", why));
+                },
             }
         });
     }
@@ -229,11 +240,11 @@ fn main() {
                 Ok(_) => {
                     uninstall.set_visible(false);
                     install.set_visible(true);
-                    if let Ok(string) = str::from_utf8(&string) {
-                        update_console(&console, string);
-                    }
+                    let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
                 }
-                Err(why) => eprintln!("fontfinder: unable to remove font: {}", why),
+                Err(why) => {
+                    update_console(&console, &format!("unable to remove font: {}\n", why));
+                },
             }
         });
     }
@@ -282,5 +293,6 @@ fn is_installed(archive: &FontsList, family: &str, path: &Path) -> bool {
 }
 
 fn update_console(console: &TextBuffer, message: &str) {
+    eprint!("fontfinder: {}", message);
     console.insert(&mut console.get_end_iter(), &message)
 }

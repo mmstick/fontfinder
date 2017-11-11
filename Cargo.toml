@@ -1,7 +1,7 @@
 [package]
 authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
 name = "fontfinder"
-version = "1.1.0"
+version = "1.1.1"
 
 [[bin]]
 name = "fontfinder"
@@ -15,8 +15,8 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 
-[dependencies.derive-fail]
-git = "https://github.com/withoutboats/derive-fail"
+[dependencies.failure_derive]
+git = "https://github.com/withoutboats/failure_derive"
 
 [dependencies.failure]
 git = "https://github.com/withoutboats/failure"

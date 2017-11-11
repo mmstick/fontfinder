@@ -8,7 +8,7 @@ pub mod fonts;
 pub mod html;
 
 #[macro_use]
-extern crate derive_fail;
+extern crate failure_derive;
 
 #[macro_use]
 extern crate horrorshow;

@@ -10,6 +10,8 @@ pub struct Header {
     pub show_installed: CheckButton,
 }
 
+macro_rules! button { ($label:expr) => { Button::new_with_label($label) } }
+
 impl Header {
     pub fn new() -> Header {
         // Headers need header bars, right?
@@ -18,16 +20,11 @@ impl Header {
         container.set_title("Font Finder");
 
         // Buttons for installing and uninstalling fonts.
-        let install = Button::new_with_label("Install");
-        let uninstall = Button::new_with_label("Uninstall");
+        let (install, uninstall) = (button!("Install"), button!("Uninstall"));
 
         // Set styles for those buttons.
-        install
-            .get_style_context()
-            .map(|context| context.add_class("suggested-action"));
-        uninstall
-            .get_style_context()
-            .map(|context| context.add_class("destructive-action"));
+        set_class(&install, "suggested-action");
+        set_class(&uninstall, "destructive-action");
 
         // Add a font size spin button.
         let font_size = SpinButton::new(&Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0), 0.1, 2);
@@ -66,4 +63,8 @@ impl Header {
             show_installed,
         }
     }
+}
+
+fn set_class<W: WidgetExt>(widget: &W, class: &str) {
+    widget.get_style_context().map(|c| c.add_class(class));
 }
