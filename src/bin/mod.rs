@@ -3,8 +3,10 @@ extern crate gio;
 extern crate gtk;
 extern crate webkit2gtk;
 
+mod fc_cache;
 mod gtk_ui;
 
+use self::fc_cache::{fc_cache_event_loop, RUN_FC_FACHE};
 use fontfinder::{dirs, fonts, html, FontError};
 use fontfinder::fonts::FontsList;
 use gtk::*;
@@ -17,6 +19,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use webkit2gtk::*;
 
 fn main() {
+    // Spawn a thread to wait for fc-cache events
+    fc_cache_event_loop();
+
     // Initialize GTK before proceeding.
     if gtk::init().is_err() {
         eprintln!("failed to initialize GTK Application");
@@ -203,6 +208,7 @@ fn main() {
                     install.set_visible(false);
                     uninstall.set_visible(true);
                     font.container.set_visible(installed.get_active());
+                    RUN_FC_FACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
                 }
                 Err(why) => {
@@ -227,6 +233,7 @@ fn main() {
                 Ok(_) => {
                     uninstall.set_visible(false);
                     install.set_visible(true);
+                    RUN_FC_FACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
                 }
                 Err(why) => {
