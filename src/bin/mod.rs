@@ -120,6 +120,10 @@ fn main() {
     let rows = app.main.fonts;
     let size = app.header.font_size;
     let dark_preview = app.header.dark_preview;
+    let category = app.main.categories;
+    let search = app.main.search;
+    let path = local_font_path;
+    let show_installed = app.header.show_installed;
 
     macro_rules! update_preview {
         ($value:tt, $method:tt) => {{
@@ -148,56 +152,28 @@ fn main() {
     update_preview!(dark_preview, connect_toggled);
     update_preview!(sample, connect_changed);
 
-    {
-        // Filters all fonts that don't match a selected category.
-        let category = app.main.categories.clone();
-        let rows = rows.clone();
-        let search = app.main.search.clone();
-        let path = local_font_path.clone();
-        let archive = fonts_archive.clone();
-        let installed = app.header.show_installed.clone();
-        category.connect_changed(move |category| {
-            if let Some(category) = category.get_active_text() {
-                filter_category(&category, get_search(&search), &rows.borrow(), |family| {
-                    installed.get_active() || !is_installed(&archive, family, &path)
-                });
-            }
-        });
+    macro_rules! filter_fonts {
+        ($value:tt, $method:tt) => {{
+            let category = category.clone();
+            let rows = rows.clone();
+            let search = search.clone();
+            let path = path.clone();
+            let fonts_archive = fonts_archive.clone();
+            let show_installed = show_installed.clone();
+            #[allow(unused)]
+            $value.$method(move |$value| {
+                if let Some(category) = category.get_active_text() {
+                    filter_category(&category, get_search(&search), &rows.borrow(), |family| {
+                        show_installed.get_active() || !is_installed(&fonts_archive, family, &path)
+                    });
+                }
+            });
+        }}
     }
 
-    {
-        // Filters fonts based on the search + category.
-        let category = app.main.categories.clone();
-        let rows = rows.clone();
-        let search = app.main.search.clone();
-        let path = local_font_path.clone();
-        let archive = fonts_archive.clone();
-        let installed = app.header.show_installed.clone();
-        search.connect_search_changed(move |search| {
-            if let Some(category) = category.get_active_text() {
-                filter_category(&category, get_search(&search), &rows.borrow(), |family| {
-                    installed.get_active() || !is_installed(&archive, family, &path)
-                });
-            }
-        });
-    }
-
-    {
-        // Filters fonts when the show_installed checkbox is toggled.
-        let category = app.main.categories.clone();
-        let rows = rows.clone();
-        let search = app.main.search.clone();
-        let path = local_font_path.clone();
-        let archive = fonts_archive.clone();
-        let installed = app.header.show_installed.clone();
-        installed.connect_toggled(move |installed| {
-            if let Some(category) = category.get_active_text() {
-                filter_category(&category, get_search(&search), &rows.borrow(), |family| {
-                    installed.get_active() || !is_installed(&archive, family, &path)
-                });
-            }
-        });
-    }
+    filter_fonts!(category, connect_changed);
+    filter_fonts!(search, connect_search_changed);
+    filter_fonts!(show_installed, connect_toggled);
 
     {
         // Programs the install button
@@ -206,7 +182,7 @@ fn main() {
         let row_id = row_id.clone();
         let rows = rows.clone();
         let fonts_archive = fonts_archive.clone();
-        let installed = app.header.show_installed.clone();
+        let installed = show_installed.clone();
         let console = app.main.terminal.clone();
         install.connect_clicked(move |install| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
