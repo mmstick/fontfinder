@@ -6,7 +6,7 @@ fn get_font_url(family: &str) -> String { [FONT_URL, family].concat() }
 
 /// Simply build a HTML page with the correct font family, at a given size, and with a
 /// supplied string of text. Then pass the results into a specified closure.
-pub fn generate<F: Fn(&str)>(family: &str, size: f64, text: &str, closure: F) {
+pub fn generate<F: Fn(&str)>(family: &str, size: f64, text: &str, dark: bool, closure: F) {
     let string = format!(
         "{}",
         html! {
@@ -18,6 +18,9 @@ pub fn generate<F: Fn(&str)>(family: &str, size: f64, text: &str, closure: F) {
                         : format!("body {{ font-size: {}em; font-family: {}; }}", size, family);
                         : "html { margin: 0; border: 0; padding: 0 }";
                         : "p { margin: .5em }"
+                    }
+                    @ if dark {
+                        style { : "html { background: #333; color: #FFF }" }
                     }
                 }
                 body {

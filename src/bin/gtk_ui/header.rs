@@ -8,6 +8,7 @@ pub struct Header {
     pub install:        Button,
     pub uninstall:      Button,
     pub show_installed: CheckButton,
+    pub dark_preview:   CheckButton,
 }
 
 macro_rules! button { ($label:expr) => { Button::new_with_label($label) } }
@@ -28,13 +29,17 @@ impl Header {
 
         // Add a font size spin button.
         let font_size = SpinButton::new(&Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0), 0.1, 2);
+        let dark_preview = CheckButton::new_with_label("Dark Preview");
         let show_installed = CheckButton::new_with_label("Installed");
         show_installed.set_active(true);
 
         // The settings menu, contained within a vertical box.
         let menu_box = Box::new(Orientation::Vertical, 5);
-        menu_box.pack_start(&Label::new("Show"), true, false, 0);
-        menu_box.pack_start(&show_installed, true, false, 0);
+        menu_box.pack_start(&Label::new("Show"), false, false, 0);
+        menu_box.pack_start(&show_installed, false, false, 0);
+        menu_box.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
+        menu_box.pack_start(&Label::new("Preview"), false, false, 0);
+        menu_box.pack_start(&dark_preview, false, false, 0);
         set_margin(&menu_box, 5, 5, 5, 5);
 
         // Create the popover menu for the settings menu button.
@@ -61,6 +66,7 @@ impl Header {
             install,
             uninstall,
             show_installed,
+            dark_preview
         }
     }
 }

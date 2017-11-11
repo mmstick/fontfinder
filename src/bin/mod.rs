@@ -44,7 +44,7 @@ fn main() {
     // Collect a list of unique categories from that font list.
     let categories = fonts_archive.get_categories();
     // Contains the ID of the currently-selected row, to cut down on lookups.
-    let current_row_id = Arc::new(AtomicUsize::new(0));
+    let row_id = Arc::new(AtomicUsize::new(0));
 
     // Initializes the complete structure of the GTK application.
     // Contains all relevant widgets that we will manipulate.
@@ -64,9 +64,10 @@ fn main() {
         let install = app.header.install.clone();
         let title = app.header.container.clone();
         let size = app.header.font_size.clone();
-        let row_id = current_row_id.clone();
+        let row_id = row_id.clone();
         let fonts_archive = fonts_archive.clone();
         let console = app.main.terminal.clone();
+        let dark_preview = app.header.dark_preview.clone();
         list.connect_row_selected(move |_, row| {
             if let Some(row) = row.as_ref() {
                 // Get the ID of the currently-selected row.
@@ -80,9 +81,13 @@ fn main() {
 
                 // If there is some sample text, update the font preview.
                 if let Some(sample_text) = get_text(&sample) {
-                    html::generate(&font.family, size.get_value(), &sample_text, |html| {
-                        preview.load_html(html, None)
-                    });
+                    html::generate(
+                        &font.family,
+                        size.get_value(),
+                        &sample_text,
+                        dark_preview.get_active(),
+                        |html| preview.load_html(html, None)
+                    );
                 }
 
                 // Then set the visibility of the Install & Uninstall buttons accordingly.
@@ -110,48 +115,43 @@ fn main() {
         });
     }
 
-    {
-        // Updates the preview when the value of the font size spinner is changed.
-        let sample = app.main.sample_buffer.clone();
-        let preview = app.main.view.clone();
-        let rows = app.main.fonts.clone();
-        let size = app.header.font_size.clone();
-        let row_id = current_row_id.clone();
-        size.connect_property_value_notify(move |size| {
-            get_buffer(&sample).map(|sample| {
-                html::generate(
-                    &(*rows.borrow())[row_id.load(Ordering::SeqCst)].family,
-                    size.get_value(),
-                    &sample,
-                    |html| preview.load_html(html, None),
-                )
+    let sample = app.main.sample_buffer;
+    let preview = app.main.view;
+    let rows = app.main.fonts;
+    let size = app.header.font_size;
+    let dark_preview = app.header.dark_preview;
+
+    macro_rules! update_preview {
+        ($value:tt, $method:tt) => {{
+            let sample = sample.clone();
+            let preview = preview.clone();
+            let rows = rows.clone();
+            let size = size.clone();
+            let row_id = row_id.clone();
+            let dark_preview = dark_preview.clone();
+            #[allow(unused)]
+            $value.$method(move |$value| {
+                get_buffer(&sample).map(|sample| {
+                    html::generate(
+                        &(*rows.borrow())[row_id.load(Ordering::SeqCst)].family,
+                        size.get_value(),
+                        &sample,
+                        dark_preview.get_active(),
+                        |html| preview.load_html(html, None),
+                    )
+                });
             });
-        });
+        }}
     }
 
-    {
-        // Updates the preview when the sample text is updated.
-        let sample = app.main.sample_buffer.clone();
-        let preview = app.main.view.clone();
-        let rows = app.main.fonts.clone();
-        let size = app.header.font_size.clone();
-        let row_id = current_row_id.clone();
-        sample.connect_changed(move |sample| {
-            get_buffer(&sample).map(|sample| {
-                html::generate(
-                    &(*rows.borrow())[row_id.load(Ordering::SeqCst)].family,
-                    size.get_value(),
-                    &sample,
-                    |html| preview.load_html(html, None),
-                )
-            });
-        });
-    }
+    update_preview!(size, connect_property_value_notify);
+    update_preview!(dark_preview, connect_toggled);
+    update_preview!(sample, connect_changed);
 
     {
         // Filters all fonts that don't match a selected category.
         let category = app.main.categories.clone();
-        let rows = app.main.fonts.clone();
+        let rows = rows.clone();
         let search = app.main.search.clone();
         let path = local_font_path.clone();
         let archive = fonts_archive.clone();
@@ -168,7 +168,7 @@ fn main() {
     {
         // Filters fonts based on the search + category.
         let category = app.main.categories.clone();
-        let rows = app.main.fonts.clone();
+        let rows = rows.clone();
         let search = app.main.search.clone();
         let path = local_font_path.clone();
         let archive = fonts_archive.clone();
@@ -185,7 +185,7 @@ fn main() {
     {
         // Filters fonts when the show_installed checkbox is toggled.
         let category = app.main.categories.clone();
-        let rows = app.main.fonts.clone();
+        let rows = rows.clone();
         let search = app.main.search.clone();
         let path = local_font_path.clone();
         let archive = fonts_archive.clone();
@@ -203,8 +203,8 @@ fn main() {
         // Programs the install button
         let install = app.header.install.clone();
         let uninstall = app.header.uninstall.clone();
-        let row_id = current_row_id.clone();
-        let rows = app.main.fonts.clone();
+        let row_id = row_id.clone();
+        let rows = rows.clone();
         let fonts_archive = fonts_archive.clone();
         let installed = app.header.show_installed.clone();
         let console = app.main.terminal.clone();
@@ -229,8 +229,8 @@ fn main() {
         // Programs the uninstall button
         let install = app.header.install.clone();
         let uninstall = app.header.uninstall.clone();
-        let row_id = current_row_id.clone();
-        let rows = app.main.fonts.clone();
+        let row_id = row_id.clone();
+        let rows = rows.clone();
         let fonts_archive = fonts_archive.clone();
         let console = app.main.terminal.clone();
         uninstall.connect_clicked(move |uninstall| {
