@@ -28,6 +28,8 @@ impl FontsList {
 
         // Get the base directory of the local font directory
         let path = dirs::font_cache().ok_or(FontError::FontDirectory)?;
+        // Create the base directory of the local fonts
+        dirs::make_rec_dir(&path)?;
         // Find the given font in the font list and return it's reference.
         let font = self.get_family(family).ok_or(FontError::FontNotFound)?;
 
