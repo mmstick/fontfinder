@@ -210,6 +210,7 @@ fn main() {
                     font.container.set_visible(installed.get_active());
                     RUN_FC_FACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
+                    update_console(&console, &format!("{} installed\n", &font.family));
                 }
                 Err(why) => {
                     update_console(&console, &format!("unable to install font: {}\n", why));
@@ -235,6 +236,7 @@ fn main() {
                     install.set_visible(true);
                     RUN_FC_FACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
+                    update_console(&console, &format!("{} uninstalled\n", &font.family));
                 }
                 Err(why) => {
                     update_console(&console, &format!("unable to remove font: {}\n", why));
