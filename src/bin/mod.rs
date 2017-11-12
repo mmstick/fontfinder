@@ -6,7 +6,7 @@ extern crate webkit2gtk;
 mod fc_cache;
 mod gtk_ui;
 
-use self::fc_cache::{fc_cache_event_loop, RUN_FC_FACHE};
+use self::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
 use fontfinder::{dirs, fonts, html, FontError};
 use fontfinder::fonts::FontsList;
 use gtk::*;
@@ -210,7 +210,7 @@ fn main() {
                     uninstall.set_visible(true);
                     console_panel.set_visible(true);
                     font.container.set_visible(installed.get_active());
-                    RUN_FC_FACHE.store(true, Ordering::Relaxed);
+                    RUN_FC_CACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
                     update_console(&console, &format!("{} installed\n", &font.family));
                 }
@@ -238,7 +238,7 @@ fn main() {
                     uninstall.set_visible(false);
                     install.set_visible(true);
                     console_panel.set_visible(true);
-                    RUN_FC_FACHE.store(true, Ordering::Relaxed);
+                    RUN_FC_CACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
                     update_console(&console, &format!("{} uninstalled\n", &font.family));
                 }
