@@ -90,12 +90,7 @@ impl FontsList {
 
     /// Sift through the font list and collect all unique categories found.
     pub fn get_categories(&self) -> Vec<String> {
-        self.items
-            .iter()
-            .map(|f| f.category.as_str())
-            .unique()
-            .map(String::from)
-            .collect()
+        self.items.iter().map(|f| f.category.as_str()).unique().map(String::from).collect()
     }
 }
 

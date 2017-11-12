@@ -15,8 +15,15 @@ pub fn generate<F: Fn(&str)>(
     dark: bool,
     closure: F,
 ) {
+    // Creates a sorted list of font style variants obtained from Google.
+    // The variants need to be modified to adhere to Google's font CSS API.
     let variants = sorted(variants.iter().map(|x| get_style(x)));
+
+    // Obtains the stylesheet for the given font family from Google's font server,
+    // additionally ensuring that each variant of the font is included.
     let css = get_font_url(&[family, ":", &variants.join(",")].concat());
+
+    // Renders the HTML page in memory using horrorshow's html templating macro.
     let string = format!(
         "{}",
         html! {
@@ -58,6 +65,8 @@ pub fn generate<F: Fn(&str)>(
         }
     );
 
+    // Passes the rendered HTML as an `&str` into the provided closure.
+    // The GTK frontend will use this to pass the string into a webkit view.
     closure(string.as_str());
 }
 

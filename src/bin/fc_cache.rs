@@ -17,10 +17,7 @@ pub fn fc_cache_event_loop() {
             // If the UI has set the atomic value to true, this will spawn a fc-fache process.
             if RUN_FC_CACHE.swap(false, Ordering::Relaxed) {
                 eprintln!("fontfinder: execution fc-cache -f in the background");
-                let _ = Command::new("fc-cache")
-                    .arg("-f")
-                    .spawn()
-                    .map(|mut child| child.wait());
+                let _ = Command::new("fc-cache").arg("-f").spawn().map(|mut child| child.wait());
             }
         }
     });

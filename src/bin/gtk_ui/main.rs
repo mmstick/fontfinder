@@ -144,12 +144,7 @@ impl FontRow {
         let container = ListBoxRow::new();
         container.add(&label);
 
-        FontRow {
-            container,
-            category,
-            family,
-            variants,
-        }
+        FontRow { container, category, family, variants }
     }
 
     pub fn set_visibility(&self, visibility: bool) { self.container.set_visible(visibility); }

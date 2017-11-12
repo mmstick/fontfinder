@@ -60,14 +60,7 @@ impl Header {
         container.pack_end(&install);
         container.pack_end(&uninstall);
 
-        Header {
-            container,
-            font_size,
-            install,
-            uninstall,
-            show_installed,
-            dark_preview,
-        }
+        Header { container, font_size, install, uninstall, show_installed, dark_preview }
     }
 }
 

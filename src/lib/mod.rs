@@ -24,10 +24,14 @@ use std::io;
 
 #[derive(Debug, Fail)]
 pub enum FontError {
-    #[fail(display = "error getting font directory")] FontDirectory,
-    #[fail(display = "connection error: {}", why)] Connection { why: reqwest::Error },
-    #[fail(display = "font family not found in font list")] FontNotFound,
-    #[fail(display = "I/O error: {}", why)] File { why: io::Error },
+    #[fail(display = "error getting font directory")]
+    FontDirectory,
+    #[fail(display = "connection error: {}", why)]
+    Connection { why: reqwest::Error },
+    #[fail(display = "font family not found in font list")]
+    FontNotFound,
+    #[fail(display = "I/O error: {}", why)]
+    File { why: io::Error },
 }
 
 impl From<reqwest::Error> for FontError {

@@ -31,11 +31,7 @@ impl App {
             Inhibit(false)
         });
 
-        App {
-            window,
-            header,
-            main,
-        }
+        App { window, header, main }
     }
 }
 
