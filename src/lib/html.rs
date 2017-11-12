@@ -61,6 +61,8 @@ pub fn generate<F: Fn(&str)>(
     closure(string.as_str());
 }
 
+/// Converts the font style provided by Google (regular, 300italic, italic, 500regular) to the
+/// corresponding style that is accepted by their CSS API. Not sure why their API differs.
 fn get_style(input: &str) -> &str {
     input.rfind(char::is_numeric).map_or_else(
         || if input == "italic" { "400i" } else { "400" },

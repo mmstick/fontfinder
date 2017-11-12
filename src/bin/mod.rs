@@ -28,6 +28,7 @@ fn main() {
         process::exit(1);
     }
 
+    // Grabs the local font directory, which is "~/.local/share/fonts/"
     let local_font_path = match dirs::font_cache().ok_or(FontError::FontDirectory) {
         Ok(path) => Arc::new(path),
         Err(why) => {
@@ -249,15 +250,21 @@ fn main() {
         });
     }
 
+    // Shows the application window and all of the widgets owned by that window.
     app.window.show_all();
+    // Additionally hides some widgets that should be hidden by default.
     app.header.install.set_visible(false);
     app.header.uninstall.set_visible(false);
     app.main.console_panel.set_visible(false);
 
+    // Begins the main event loop of GTK, which will display the GUI and handle all the
+    // actions that were mapped to each of the widgets in the UI.
     gtk::main();
 }
 
-/// Filters visibility of associated font ListBoxRow's, according to a given category filter.
+/// Filters visibility of associated font ListBoxRow's, according to a given category filter,
+/// The contents of the search bar, and a closure that determines whether the font is installed
+/// or not.
 fn filter_category<F>(category: &str, search: Option<String>, fonts: &[FontRow], installed: F)
     where F: Fn(&str) -> bool
 {
@@ -269,12 +276,14 @@ fn filter_category<F>(category: &str, search: Option<String>, fonts: &[FontRow],
     })
 }
 
+/// Obtains the entire inner string of a given text buffer.
 fn get_buffer(buffer: &TextBuffer) -> Option<String> {
     let start = buffer.get_start_iter();
     let end = buffer.get_end_iter();
     buffer.get_text(&start, &end, true)
 }
 
+/// Obtains the value of the search entry from the UI
 fn get_search(search: &SearchEntry) -> Option<String> {
     match search.get_text().take() {
         Some(ref text) if text.is_empty() => None,
@@ -283,6 +292,7 @@ fn get_search(search: &SearchEntry) -> Option<String> {
     }
 }
 
+/// Evaluates whether each variant of a given font family is locally installed.
 fn is_installed(archive: &FontsList, family: &str, path: &Path) -> bool {
     let font = archive.get_family(&family).unwrap();
     font.files
@@ -290,6 +300,7 @@ fn is_installed(archive: &FontsList, family: &str, path: &Path) -> bool {
         .all(|(variant, uri)| dirs::font_exists(path, family, variant.as_str(), uri.as_str()))
 }
 
+/// Update's the interface's console, and additionally writes the same message to stderr.
 fn update_console(console: &TextBuffer, message: &str) {
     eprint!("fontfinder: {}", message);
     console.insert(&mut console.get_end_iter(), &message)

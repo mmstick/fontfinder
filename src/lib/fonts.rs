@@ -13,6 +13,7 @@ lazy_static! {
     };
 }
 
+/// The JSON response from Google that contains information on Google's font archive.
 #[derive(Deserialize)]
 pub struct FontsList {
     pub kind:  String,
@@ -27,26 +28,27 @@ impl FontsList {
         // Initialize a client that will be re-used between requests.
         let client = Client::new();
 
-        // Get the base directory of the local font directory
+        // The base path of the local font directory will be used to construct future file paths.
         let path = dirs::font_cache().ok_or(FontError::FontDirectory)?;
-        // Create the base directory of the local fonts
-        dirs::make_rec_dir(&path)?;
-        // Find the given font in the font list and return it's reference.
+        // Recursively creates the aforementioned path if it does not already exist.
+        dirs::recursively_create(&path)?;
+
+        // Finds the given font in the font list and return it's reference.
         let font = self.get_family(family).ok_or(FontError::FontNotFound)?;
 
         // Download/install each variant of the given font family.
         for (variant, uri) in &font.files {
             // Create a variant of the path with this variant's filename.
             let path = dirs::get_font_path(&path, family, &variant, &uri);
-            // Write the action to stderr + the provided writer.
-            let message = format!("Installing '{:?}'\n", path);
-            eprint!("fontfinder: {}", message);
-            let _ = writer.write(message.as_bytes());
-            // Then create that file for writing.
-            let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
+
+            // Writes information about what's happening to the UI's console.
+            let _ = writer.write(format!("Installing '{:?}'\n", path).as_bytes());
+
             // GET the font variant from Google's servers.
             let mut data = client.get(uri.as_str()).send()?;
-            // Copy the font's data directly to the initialized file.
+
+            // Then create that file for writing, and write the font's data to the file.
+            let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
             io::copy(&mut data, &mut file)?;
         }
 
@@ -59,6 +61,7 @@ impl FontsList {
     {
         // Get the base directory of the local font directory
         let path = dirs::font_cache().ok_or(FontError::FontDirectory)?;
+
         // Find the given font in the font list and return it's reference.
         let font = self.get_family(family).ok_or(FontError::FontNotFound)?;
 
@@ -66,15 +69,14 @@ impl FontsList {
         for (variant, uri) in &font.files {
             // Create a variant of the path with this variant's filename.
             let path = dirs::get_font_path(&path, family, &variant, &uri);
-            // Write the action to stderr + the provided writer.
-            let message = format!("Removing '{:?}'\n", path);
-            eprint!("fontfinder: {}", message);
-            let _ = writer.write(message.as_bytes());
+
+            // Writes information about what's happening to the UI's console.
+            let _ = writer.write(format!("Removing '{:?}'\n", path).as_bytes());
+
             // Then remove that file, if it exists.
             if let Err(why) = fs::remove_file(&path) {
-                let message = format!("Unable to remove '{:?}': {}\n", path, why);
-                eprint!("fontfinder: {}", message);
-                let _ = writer.write(message.as_bytes());
+                let msg = format!("Unable to remove '{:?}': {}\n", path, why);
+                let _ = writer.write(msg.as_bytes());
             }
         }
 
@@ -97,11 +99,7 @@ impl FontsList {
     }
 }
 
-pub struct FontVariant<'a> {
-    pub variant: &'a str,
-    pub uri:     &'a str,
-}
-
+/// A representation of an individual font within Google's font archive.
 #[derive(Deserialize)]
 pub struct Font {
     pub kind:     String,
@@ -114,4 +112,6 @@ pub struct Font {
     pub files:    HashMap<String, String>,
 }
 
+/// Obtains the list of fonts from Google's font archive, whereby serde is automatically
+/// deserializing the JSON into the `FontsList` structure.
 pub fn obtain() -> reqwest::Result<FontsList> { reqwest::get(URL.as_str())?.json() }

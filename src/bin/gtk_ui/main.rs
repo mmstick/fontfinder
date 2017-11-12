@@ -63,12 +63,14 @@ impl Main {
         lbox.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
         lbox.pack_start(&scroller, true, true, 0);
 
+        // Initializes the webkit2gtk preview that will display the fonts.
         let context = WebContext::get_default().unwrap();
         let view = WebView::new_with_context_and_user_content_manager(
             &context,
             &UserContentManager::new(),
         );
 
+        // Initializes the sample text buffer that the preview is generated from.
         let buffer = TextBuffer::new(None);
         buffer.set_text(
             "Lorem ipsum dolor sit amet, consectetur adipiscing \
@@ -76,28 +78,31 @@ impl Main {
                 et dolore magna aliqua.",
         );
 
+        // And assigns that text buffer to this text view, so the user can enter text into it.
         let sample_text = TextView::new_with_buffer(&buffer);
         sample_text.set_wrap_mode(WrapMode::Word);
         set_view_margins(&sample_text);
 
+        // Wraps up the sample text and it's associated preview as the right panel.
         let rbox = Box::new(Orientation::Vertical, 0);
         rbox.pack_start(&sample_text, false, false, 0);
         rbox.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
         rbox.pack_start(&view, true, true, 0);
 
+        // Adds a bottom panel which contains the console and it's output.
         let tscroller = ScrolledWindow::new(None, None);
         let terminal = TextBuffer::new(None);
         let tview = TextView::new_with_buffer(&terminal);
         let label = Label::new("Console Output");
         set_margin(&label, 5, 5, 5, 5);
         set_view_margins(&tview);
-
         tview.set_editable(false);
         tscroller.add(&tview);
-
         let console_panel = Box::new(Orientation::Vertical, 0);
         console_panel.pack_start(&label, false, false, 0);
         console_panel.pack_start(&tscroller, true, true, 0);
+
+        // Attaches all of contents of the window accordingly.
         content.pack1(&lbox, false, false);
         content.pack2(&rbox, true, true);
         container.pack1(&content, true, true);

@@ -71,6 +71,7 @@ impl Header {
     }
 }
 
+/// A simple convenience function for adding a style class to a widget.
 fn set_class<W: WidgetExt>(widget: &W, class: &str) {
     widget.get_style_context().map(|c| c.add_class(class));
 }
