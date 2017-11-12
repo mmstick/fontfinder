@@ -200,6 +200,7 @@ fn main() {
         let fonts_archive = fonts_archive.clone();
         let installed = show_installed.clone();
         let console = app.main.terminal.clone();
+        let console_panel = app.main.console_panel.clone();
         install.connect_clicked(move |install| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
@@ -207,6 +208,7 @@ fn main() {
                 Ok(_) => {
                     install.set_visible(false);
                     uninstall.set_visible(true);
+                    console_panel.set_visible(true);
                     font.container.set_visible(installed.get_active());
                     RUN_FC_FACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
@@ -227,6 +229,7 @@ fn main() {
         let rows = rows.clone();
         let fonts_archive = fonts_archive.clone();
         let console = app.main.terminal.clone();
+        let console_panel = app.main.console_panel.clone();
         uninstall.connect_clicked(move |uninstall| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
@@ -234,6 +237,7 @@ fn main() {
                 Ok(_) => {
                     uninstall.set_visible(false);
                     install.set_visible(true);
+                    console_panel.set_visible(true);
                     RUN_FC_FACHE.store(true, Ordering::Relaxed);
                     let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
                     update_console(&console, &format!("{} uninstalled\n", &font.family));
@@ -248,6 +252,7 @@ fn main() {
     app.window.show_all();
     app.header.install.set_visible(false);
     app.header.uninstall.set_visible(false);
+    app.main.console_panel.set_visible(false);
 
     gtk::main();
 }

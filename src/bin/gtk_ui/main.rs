@@ -17,6 +17,7 @@ pub struct Main {
     pub sample_buffer: TextBuffer,
     pub search:        SearchEntry,
     pub terminal:      TextBuffer,
+    pub console_panel: Box,
 }
 
 impl Main {
@@ -94,13 +95,13 @@ impl Main {
         tview.set_editable(false);
         tscroller.add(&tview);
 
-        let temp = Box::new(Orientation::Vertical, 0);
-        temp.pack_start(&label, false, false, 0);
-        temp.pack_start(&tscroller, true, true, 0);
+        let console_panel = Box::new(Orientation::Vertical, 0);
+        console_panel.pack_start(&label, false, false, 0);
+        console_panel.pack_start(&tscroller, true, true, 0);
         content.pack1(&lbox, false, false);
         content.pack2(&rbox, true, true);
         container.pack1(&content, true, true);
-        container.pack2(&temp, false, false);
+        container.pack2(&console_panel, false, false);
 
         Main {
             container,
@@ -113,6 +114,7 @@ impl Main {
             search,
             sample_buffer: buffer,
             terminal,
+            console_panel,
         }
     }
 }
