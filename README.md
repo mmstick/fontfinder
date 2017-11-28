@@ -12,12 +12,8 @@ resource consumption.
 ## Installation Instructions
 
 ```
-cargo install --git https://github.com/mmstick/fontfinder
+cargo install fontfinder
 ```
-
-> When a new suite of GTK crates are released that also contains the
-> webkit2gtk crate, the above installation instructions will be changed to
-> `cargo install fontfinder`.
 
 ## Screenshots
 
