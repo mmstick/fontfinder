@@ -3,4 +3,4 @@ Type=Application
 Name=Font Finder
 Icon=typecatcher
 Exec=fontfinder
-Categories=Utility
+Categories=Utility;
