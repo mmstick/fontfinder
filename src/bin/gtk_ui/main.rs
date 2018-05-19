@@ -139,6 +139,7 @@ impl FontRow {
         label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
         label.set_halign(Align::Start);
         label.set_margin_top(5);
+        label.set_margin_start(6);
 
         // Store the label within the list box row.
         let container = ListBoxRow::new();
