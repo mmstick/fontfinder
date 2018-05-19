@@ -1,7 +1,7 @@
-use std::process::Command;
-use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
-use std::thread;
-use std::time::Duration;
+use std::{
+    process::Command, sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT}, thread,
+    time::Duration,
+};
 
 /// Used to signal the fc cache event loop to spawn an fc-cache process.
 pub static RUN_FC_CACHE: AtomicBool = ATOMIC_BOOL_INIT;
@@ -17,7 +17,10 @@ pub fn fc_cache_event_loop() {
             // If the UI has set the atomic value to true, this will spawn a fc-fache process.
             if RUN_FC_CACHE.swap(false, Ordering::Relaxed) {
                 eprintln!("fontfinder: execution fc-cache -f in the background");
-                let _ = Command::new("fc-cache").arg("-f").spawn().map(|mut child| child.wait());
+                let _ = Command::new("fc-cache")
+                    .arg("-f")
+                    .spawn()
+                    .map(|mut child| child.wait());
             }
         }
     });

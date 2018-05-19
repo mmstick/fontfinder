@@ -7,15 +7,16 @@ mod fc_cache;
 mod gtk_ui;
 
 use self::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
-use fontfinder::{dirs, fonts, html, FontError};
-use fontfinder::fonts::FontsList;
+use fontfinder::{
+    dirs, fonts::{self, FontsList}, html, FontError,
+};
 use gtk::*;
 use gtk_ui::{App, FontRow};
-use std::path::Path;
-use std::process;
-use std::str;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::{
+    path::Path, process, str, sync::{
+        atomic::{AtomicUsize, Ordering}, Arc,
+    },
+};
 use webkit2gtk::*;
 
 fn main() {
@@ -72,7 +73,6 @@ fn main() {
         let size = app.header.font_size.clone();
         let row_id = row_id.clone();
         let fonts_archive = fonts_archive.clone();
-        let console = app.main.terminal.clone();
         let dark_preview = app.header.dark_preview.clone();
         list.connect_row_selected(move |_, row| {
             if let Some(row) = row.as_ref() {
@@ -103,16 +103,16 @@ fn main() {
                         // Obtain the font from the font archive, so that we may get the files.
                         let font = fonts_archive.get_family(&font.family).unwrap();
                         // This returns true if all variants of the font exists.
-                        let font_exists = font.files.iter().all(
-                            |(variant, uri)| dirs::font_exists(&path, &font.family, &variant, &uri),
-                        );
+                        let font_exists = font.files.iter().all(|(variant, uri)| {
+                            dirs::font_exists(&path, &font.family, &variant, &uri)
+                        });
 
                         install.set_visible(!font_exists);
                         uninstall.set_visible(font_exists);
                     }
                     Err(why) => {
                         // Write the error to stderr & the console.
-                        update_console(&console, &format!("unable to get font cache: {}\n", why));
+                        eprintln!("unable to get font cache: {}", why);
 
                         install.set_visible(false);
                         uninstall.set_visible(false);
@@ -155,7 +155,7 @@ fn main() {
                     )
                 });
             });
-        }}
+        }};
     }
 
     // Triggers when the font size spin button's value is changed.
@@ -182,7 +182,7 @@ fn main() {
                     });
                 }
             });
-        }}
+        }};
     }
 
     // Triggers when the category combo box is changed.
@@ -200,8 +200,6 @@ fn main() {
         let rows = rows.clone();
         let fonts_archive = fonts_archive.clone();
         let installed = show_installed.clone();
-        let console = app.main.terminal.clone();
-        let console_panel = app.main.console_panel.clone();
         install.connect_clicked(move |install| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
@@ -209,14 +207,12 @@ fn main() {
                 Ok(_) => {
                     install.set_visible(false);
                     uninstall.set_visible(true);
-                    console_panel.set_visible(true);
                     font.container.set_visible(installed.get_active());
                     RUN_FC_CACHE.store(true, Ordering::Relaxed);
-                    let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
-                    update_console(&console, &format!("{} installed\n", &font.family));
+                    eprintln!("{} installed", &font.family);
                 }
                 Err(why) => {
-                    update_console(&console, &format!("unable to install font: {}\n", why));
+                    eprintln!("unable to install font: {}", why);
                 }
             }
         });
@@ -229,8 +225,6 @@ fn main() {
         let row_id = row_id.clone();
         let rows = rows.clone();
         let fonts_archive = fonts_archive.clone();
-        let console = app.main.terminal.clone();
-        let console_panel = app.main.console_panel.clone();
         uninstall.connect_clicked(move |uninstall| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
@@ -238,13 +232,11 @@ fn main() {
                 Ok(_) => {
                     uninstall.set_visible(false);
                     install.set_visible(true);
-                    console_panel.set_visible(true);
                     RUN_FC_CACHE.store(true, Ordering::Relaxed);
-                    let _ = str::from_utf8(&string).map(|s| update_console(&console, s));
-                    update_console(&console, &format!("{} uninstalled\n", &font.family));
+                    eprintln!("{} uninstalled", &font.family);
                 }
                 Err(why) => {
-                    update_console(&console, &format!("unable to remove font: {}\n", why));
+                    eprintln!("unable to remove font: {}", why);
                 }
             }
         });
@@ -255,7 +247,6 @@ fn main() {
     // Additionally hides some widgets that should be hidden by default.
     app.header.install.set_visible(false);
     app.header.uninstall.set_visible(false);
-    app.main.console_panel.set_visible(false);
 
     // Begins the main event loop of GTK, which will display the GUI and handle all the
     // actions that were mapped to each of the widgets in the UI.
@@ -266,7 +257,8 @@ fn main() {
 /// The contents of the search bar, and a closure that determines whether the font is installed
 /// or not.
 fn filter_category<F>(category: &str, search: Option<String>, fonts: &[FontRow], installed: F)
-    where F: Fn(&str) -> bool
+where
+    F: Fn(&str) -> bool,
 {
     fonts.iter().for_each(|font| {
         let visible = (category == "All" || &font.category == category)
@@ -298,10 +290,4 @@ fn is_installed(archive: &FontsList, family: &str, path: &Path) -> bool {
     font.files
         .iter()
         .all(|(variant, uri)| dirs::font_exists(path, family, variant.as_str(), uri.as_str()))
-}
-
-/// Update's the interface's console, and additionally writes the same message to stderr.
-fn update_console(console: &TextBuffer, message: &str) {
-    eprint!("fontfinder: {}", message);
-    console.insert(&mut console.get_end_iter(), &message)
 }

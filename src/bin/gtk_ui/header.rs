@@ -11,7 +11,11 @@ pub struct Header {
     pub dark_preview:   CheckButton,
 }
 
-macro_rules! button { ($label:expr) => { Button::new_with_label($label) } }
+macro_rules! button {
+    ($label:expr) => {
+        Button::new_with_label($label)
+    };
+}
 
 impl Header {
     pub fn new() -> Header {
@@ -60,7 +64,14 @@ impl Header {
         container.pack_end(&install);
         container.pack_end(&uninstall);
 
-        Header { container, font_size, install, uninstall, show_installed, dark_preview }
+        Header {
+            container,
+            font_size,
+            install,
+            uninstall,
+            show_installed,
+            dark_preview,
+        }
     }
 }
 

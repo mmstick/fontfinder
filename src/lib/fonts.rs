@@ -1,15 +1,19 @@
-use {dirs, FontError};
+use dirs;
 use itertools::Itertools;
 use reqwest::{self, Client};
-use std::collections::HashMap;
-use std::fs::{self, OpenOptions};
-use std::io::{self, Write};
+use std::{
+    collections::HashMap, fs::{self, OpenOptions}, io::{self, Write},
+};
+use FontError;
 
 const API_KEY: &str = "AIzaSyDpvpba_5RvJSvmXEJS7gZDezDaMlVTo4c";
 
 lazy_static! {
     static ref URL: String = {
-        format!("https://www.googleapis.com/webfonts/v1/webfonts?key={}", API_KEY)
+        format!(
+            "https://www.googleapis.com/webfonts/v1/webfonts?key={}",
+            API_KEY
+        )
     };
 }
 
@@ -23,7 +27,8 @@ pub struct FontsList {
 impl FontsList {
     /// Downloads/installs each variant of a given font family.
     pub fn download<W>(&self, writer: &mut W, family: &str) -> Result<(), FontError>
-        where W: Write
+    where
+        W: Write,
     {
         // Initialize a client that will be re-used between requests.
         let client = Client::new();
@@ -57,7 +62,8 @@ impl FontsList {
 
     /// Removes the installed font from the system.
     pub fn remove<W>(&self, writer: &mut W, family: &str) -> Result<(), FontError>
-        where W: Write
+    where
+        W: Write,
     {
         // Get the base directory of the local font directory
         let path = dirs::font_cache().ok_or(FontError::FontDirectory)?;
@@ -90,7 +96,12 @@ impl FontsList {
 
     /// Sift through the font list and collect all unique categories found.
     pub fn get_categories(&self) -> Vec<String> {
-        self.items.iter().map(|f| f.category.as_str()).unique().map(String::from).collect()
+        self.items
+            .iter()
+            .map(|f| f.category.as_str())
+            .unique()
+            .map(String::from)
+            .collect()
     }
 }
 

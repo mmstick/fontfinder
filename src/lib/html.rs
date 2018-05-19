@@ -75,7 +75,13 @@ pub fn generate<F: Fn(&str)>(
 fn get_style(input: &str) -> &str {
     input.rfind(char::is_numeric).map_or_else(
         || if input == "italic" { "400i" } else { "400" },
-        |pos| if &input[pos + 1..] == "italic" { &input[..pos + 2] } else { &input[..pos + 1] },
+        |pos| {
+            if &input[pos + 1..] == "italic" {
+                &input[..pos + 2]
+            } else {
+                &input[..pos + 1]
+            }
+        },
     )
 }
 

@@ -1,8 +1,9 @@
 mod header;
 mod main;
 
-pub use self::header::Header;
-pub use self::main::{FontRow, Main};
+pub use self::{
+    header::Header, main::{FontRow, Main},
+};
 use fontfinder::fonts::FontsList;
 use gtk::*;
 
@@ -31,7 +32,11 @@ impl App {
             Inhibit(false)
         });
 
-        App { window, header, main }
+        App {
+            window,
+            header,
+            main,
+        }
     }
 }
 

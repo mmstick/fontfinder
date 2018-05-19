@@ -1,8 +1,7 @@
 use super::set_margin;
 use fontfinder::fonts::Font;
 use gtk::*;
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use webkit2gtk::*;
 
 #[derive(Clone)]
@@ -16,8 +15,6 @@ pub struct Main {
     pub sample_text:   TextView,
     pub sample_buffer: TextBuffer,
     pub search:        SearchEntry,
-    pub terminal:      TextBuffer,
-    pub console_panel: Box,
 }
 
 impl Main {
@@ -73,9 +70,8 @@ impl Main {
         // Initializes the sample text buffer that the preview is generated from.
         let buffer = TextBuffer::new(None);
         buffer.set_text(
-            "Lorem ipsum dolor sit amet, consectetur adipiscing \
-                elit, sed do eiusmod tempor incididunt ut labore \
-                et dolore magna aliqua.",
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor \
+             incididunt ut labore et dolore magna aliqua.",
         );
 
         // And assigns that text buffer to this text view, so the user can enter text into it.
@@ -89,24 +85,10 @@ impl Main {
         rbox.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
         rbox.pack_start(&view, true, true, 0);
 
-        // Adds a bottom panel which contains the console and it's output.
-        let tscroller = ScrolledWindow::new(None, None);
-        let terminal = TextBuffer::new(None);
-        let tview = TextView::new_with_buffer(&terminal);
-        let label = Label::new("Console Output");
-        set_margin(&label, 5, 5, 5, 5);
-        set_view_margins(&tview);
-        tview.set_editable(false);
-        tscroller.add(&tview);
-        let console_panel = Box::new(Orientation::Vertical, 0);
-        console_panel.pack_start(&label, false, false, 0);
-        console_panel.pack_start(&tscroller, true, true, 0);
-
         // Attaches all of contents of the window accordingly.
         content.pack1(&lbox, false, false);
         content.pack2(&rbox, true, true);
         container.pack1(&content, true, true);
-        container.pack2(&console_panel, false, false);
 
         Main {
             container,
@@ -118,8 +100,6 @@ impl Main {
             sample_text,
             search,
             sample_buffer: buffer,
-            terminal,
-            console_panel,
         }
     }
 }
@@ -145,7 +125,12 @@ impl FontRow {
         let container = ListBoxRow::new();
         container.add(&label);
 
-        FontRow { container, category, family, variants }
+        FontRow {
+            container,
+            category,
+            family,
+            variants,
+        }
     }
 
     pub fn set_visibility(&self, visibility: bool) { self.container.set_visible(visibility); }
