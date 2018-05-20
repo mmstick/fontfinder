@@ -1,7 +1,8 @@
 use super::set_margin;
 use fontfinder::fonts::Font;
 use gtk::*;
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
+use std::rc::Rc;
 use webkit2gtk::*;
 
 #[derive(Clone)]

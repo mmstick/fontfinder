@@ -12,8 +12,14 @@ resource consumption.
 ## Installation Instructions
 
 ```
-cargo install fontfinder
+make && sudo make install
 ```
+
+## Requirements
+
+- cargo (Rust 1.24.0)
+- libwebkit2gtk-4.0-dev
+- libgtk-3-dev
 
 ## Screenshots
 

@@ -4,19 +4,17 @@ extern crate gtk;
 extern crate webkit2gtk;
 
 mod fc_cache;
-mod gtk_ui;
+mod ui;
 
 use self::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
-use fontfinder::{
-    dirs, fonts::{self, FontsList}, html, FontError,
-};
+use fontfinder::{dirs, html, FontError};
+use fontfinder::fonts::{self, FontsList};
 use gtk::*;
-use gtk_ui::{App, FontRow};
-use std::{
-    path::Path, process, str, sync::{
-        atomic::{AtomicUsize, Ordering}, Arc,
-    },
-};
+use ui::{App, FontRow};
+use std::path::Path;
+use std::{process, str};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use webkit2gtk::*;
 
 fn main() {

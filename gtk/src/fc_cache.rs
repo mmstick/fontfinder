@@ -1,7 +1,7 @@
-use std::{
-    process::Command, sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT}, thread,
-    time::Duration,
-};
+use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering, ATOMIC_BOOL_INIT};
+use std::thread;
+use std::time::Duration;
 
 /// Used to signal the fc cache event loop to spawn an fc-cache process.
 pub static RUN_FC_CACHE: AtomicBool = ATOMIC_BOOL_INIT;

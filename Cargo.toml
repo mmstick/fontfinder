@@ -1,29 +1,22 @@
 [package]
 authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
 name = "fontfinder"
-description = "GTK3 Font Finding GUI Application"
+description = "Font Finder Library"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/mmstick/fontfinder"
-version = "1.3.2"
+version = "1.4.0"
 
-[[bin]]
-name = "fontfinder"
-path = "src/bin/mod.rs"
+[workspace]
+members = ["gtk"]
 
 [dependencies]
-horrorshow = "0.6.2"
-itertools = "0.7.2"
-lazy_static = "0.2"
+failure = "0.1"
+failure_derive = "0.1"
+horrorshow = "0.6"
+itertools = "0.7"
+lazy_static = "1.0"
 reqwest = "0.8"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-failure = "0.1"
-failure_derive = "0.1"
-gtk = { version = "0.2", features = ["v3_22"] }
-gio = "0.2"
-webkit2gtk = { version = "0.2", features = ["v2_16"] }
-
-[lib]
-path = "src/lib/mod.rs"

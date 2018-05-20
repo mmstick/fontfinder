@@ -1,0 +1,14 @@
+[package]
+authors = ["Michael Aaron Murphy <mmstickman@gmail.com>"]
+name = "fontfinder-gtk"
+description = "GTK3 Font Finding GUI Application"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/mmstick/fontfinder"
+version = "1.4.0"
+
+[dependencies]
+fontfinder = {path = ".." }
+gio = "0.4"
+gtk = { version = "0.4", features = ["v3_22"] }
+webkit2gtk = { version = "0.4", features = ["v2_16"] }

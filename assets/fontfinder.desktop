@@ -2,5 +2,5 @@
 Type=Application
 Name=Font Finder
 Icon=typecatcher
-Exec=fontfinder
+Exec=fontfinder-gtk
 Categories=Utility;

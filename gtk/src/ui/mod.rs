@@ -1,9 +1,8 @@
 mod header;
 mod main;
 
-pub use self::{
-    header::Header, main::{FontRow, Main},
-};
+pub use self::header::Header;
+pub use self::main::{FontRow, Main};
 use fontfinder::fonts::FontsList;
 use gtk::*;
 
@@ -25,7 +24,6 @@ impl App {
         window.add(&main.container);
         window.set_title("Font Finder");
         window.set_default_size(600, 400);
-        window.set_wmclass("font-finder", "Font Finder");
 
         window.connect_delete_event(move |_, _| {
             main_quit();
@@ -42,7 +40,7 @@ impl App {
 
 pub fn set_margin<W: WidgetExt>(widget: &W, t: i32, r: i32, b: i32, l: i32) {
     widget.set_margin_top(t);
-    widget.set_margin_right(r);
+    widget.set_margin_end(r);
     widget.set_margin_bottom(b);
-    widget.set_margin_left(l);
+    widget.set_margin_start(l);
 }

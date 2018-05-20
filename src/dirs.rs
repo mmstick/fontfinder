@@ -1,6 +1,7 @@
-use std::{
-    env, fs::DirBuilder, io, path::{Path, PathBuf},
-};
+use std::env;
+use std::fs::DirBuilder;
+use std::io;
+use std::path::{Path, PathBuf};
 
 /// Recursively creates directories for a given path input.
 pub fn recursively_create(dir: &Path) -> io::Result<()> {

@@ -1,9 +1,9 @@
 use dirs;
 use itertools::Itertools;
 use reqwest::{self, Client};
-use std::{
-    collections::HashMap, fs::{self, OpenOptions}, io::{self, Write},
-};
+use std::collections::HashMap;
+use std::fs::{self, OpenOptions};
+use std::io::{self, Write};
 use FontError;
 
 const API_KEY: &str = "AIzaSyDpvpba_5RvJSvmXEJS7gZDezDaMlVTo4c";
