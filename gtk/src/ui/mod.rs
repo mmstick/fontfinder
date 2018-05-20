@@ -6,10 +6,12 @@ pub use self::header::Header;
 pub use self::main::Main;
 pub use self::fontlist::{FontList, FontRow};
 use fontfinder::dirs;
+use fontfinder::html;
 use fontfinder::fonts::FontsList;
 use gtk::*;
+use webkit2gtk::*;
 
-use utils::get_search;
+use utils::{get_buffer, get_search};
 use std::path::Path;
 
 #[derive(Clone)]
@@ -53,6 +55,19 @@ impl App {
                     self.header.show_installed.get_active()
                         || !is_installed(fonts_archive, family, path)
                 }
+            );
+        }
+    }
+
+    pub fn update_preview(&self, font: &FontRow) {
+        if let Some(sample_text) = get_buffer(&self.main.sample_buffer) {
+            html::generate(
+                &font.family,
+                &font.variants,
+                self.header.font_size.get_value(),
+                &sample_text[..],
+                self.header.dark_preview.get_active(),
+                |html| self.main.view.load_html(html, None),
             );
         }
     }

@@ -8,7 +8,7 @@ mod utils;
 mod ui;
 
 use fontfinder::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
-use fontfinder::{dirs, html, FontError};
+use fontfinder::{dirs, FontError};
 use fontfinder::fonts::{self, Sorting};
 use gtk::*;
 use ui::App;
@@ -16,7 +16,6 @@ use std::process;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use webkit2gtk::*;
 use utils::get_buffer;
 
 fn main() {
@@ -84,16 +83,7 @@ fn main() {
                 app.header.container.set_title(font.family.as_str());
 
                 // If there is some sample text, update the font preview.
-                if let Some(sample_text) = get_buffer(&app.main.sample_buffer) {
-                    html::generate(
-                        &font.family,
-                        &font.variants,
-                        app.header.font_size.get_value(),
-                        &sample_text[..],
-                        app.header.dark_preview.get_active(),
-                        |html| app.main.view.load_html(html, None),
-                    );
-                }
+                app.update_preview(font);
 
                 // Then set the visibility of the Install & Uninstall buttons accordingly.
                 match dirs::font_cache().ok_or(FontError::FontDirectory) {
@@ -135,14 +125,7 @@ fn main() {
                 $value.$method(move |$value| {
                     get_buffer(&app.main.sample_buffer).map(|sample| {
                         let font = &app.main.fonts.get_rows()[row_id.load(Ordering::SeqCst)];
-                        html::generate(
-                            &font.family,
-                            &font.variants[..],
-                            app.header.font_size.get_value(),
-                            &sample,
-                            app.header.dark_preview.get_active(),
-                            |html| app.main.view.load_html(html, None),
-                        )
+                        app.update_preview(font);
                     });
                 });
             })+
