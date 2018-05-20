@@ -9,18 +9,46 @@ use FontError;
 const API_KEY: &str = "AIzaSyDpvpba_5RvJSvmXEJS7gZDezDaMlVTo4c";
 
 lazy_static! {
-    static ref URL: String = {
+    static ref URL_ALPHA: String = {
         format!(
-            "https://www.googleapis.com/webfonts/v1/webfonts?key={}",
+            "https://www.googleapis.com/webfonts/v1/webfonts?sort=alpha&key={}",
             API_KEY
         )
     };
 }
 
-/// The JSON response from Google that contains information on Google's font archive.
+lazy_static! {
+    static ref URL_DATE: String = {
+        format!(
+            "https://www.googleapis.com/webfonts/v1/webfonts?sort=date&key={}",
+            API_KEY
+        )
+    };
+}
+
+lazy_static! {
+    static ref URL_POPULARITY: String = {
+        format!(
+            "https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key={}",
+            API_KEY
+        )
+    };
+}
+
+lazy_static! {
+    static ref URL_TRENDING: String = {
+        format!(
+            "https://www.googleapis.com/webfonts/v1/webfonts?sort=trending&key={}",
+            API_KEY
+        )
+    };
+}
+
+/// The JSON response from Google that contains information on Google's font
+/// archive.
 #[derive(Deserialize)]
 pub struct FontsList {
-    pub kind:  String,
+    pub kind: String,
     pub items: Vec<Font>,
 }
 
@@ -33,7 +61,8 @@ impl FontsList {
         // Initialize a client that will be re-used between requests.
         let client = Client::new();
 
-        // The base path of the local font directory will be used to construct future file paths.
+        // The base path of the local font directory will be used to construct future
+        // file paths.
         let path = dirs::font_cache().ok_or(FontError::FontDirectory)?;
         // Recursively creates the aforementioned path if it does not already exist.
         dirs::recursively_create(&path)?;
@@ -108,16 +137,32 @@ impl FontsList {
 /// A representation of an individual font within Google's font archive.
 #[derive(Deserialize)]
 pub struct Font {
-    pub kind:     String,
-    pub family:   String,
+    pub kind: String,
+    pub family: String,
     pub category: String,
     pub variants: Vec<String>,
-    pub subsets:  Vec<String>,
-    pub version:  String,
+    pub subsets: Vec<String>,
+    pub version: String,
     pub modified: Option<String>,
-    pub files:    HashMap<String, String>,
+    pub files: HashMap<String, String>,
+}
+
+pub enum Sorting {
+    Alphabetical,
+    DateAdded,
+    Popular,
+    Trending,
 }
 
 /// Obtains the list of fonts from Google's font archive, whereby serde is automatically
 /// deserializing the JSON into the `FontsList` structure.
-pub fn obtain() -> reqwest::Result<FontsList> { reqwest::get(URL.as_str())?.json() }
+pub fn obtain(sort_by: Sorting) -> reqwest::Result<FontsList> {
+    let url: &'static str = match sort_by {
+        Sorting::Alphabetical => URL_ALPHA.as_str(),
+        Sorting::DateAdded => URL_DATE.as_str(),
+        Sorting::Popular => URL_POPULARITY.as_str(),
+        Sorting::Trending => URL_TRENDING.as_str(),
+    };
+
+    reqwest::get(url)?.json()
+}

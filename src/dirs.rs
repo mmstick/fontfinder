@@ -8,12 +8,14 @@ pub fn recursively_create(dir: &Path) -> io::Result<()> {
     DirBuilder::new().recursive(true).create(dir)
 }
 
-/// Obtains the path of the local font share, based on the current user's home directory.
+/// Obtains the path of the local font share, based on the current user's home
+/// directory.
 pub fn font_cache() -> Option<PathBuf> {
     env::home_dir().map(|path| path.join(".local/share/fonts/"))
 }
 
-/// Returns true if the supplied font variant is found within the font directory.
+/// Returns true if the supplied font variant is found within the font
+/// directory.
 pub fn font_exists(base: &Path, family: &str, variant: &str, uri: &str) -> bool {
     get_font_path(base, family, variant, uri).exists()
 }

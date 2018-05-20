@@ -14,7 +14,8 @@ pub fn fc_cache_event_loop() {
             // Try not to eat up CPU cycles by only checking RUN_FC_CACHE every 100ms.
             thread::sleep(Duration::from_millis(100));
 
-            // If the UI has set the atomic value to true, this will spawn a fc-fache process.
+            // If the UI has set the atomic value to true, this will spawn a fc-fache
+            // process.
             if RUN_FC_CACHE.swap(false, Ordering::Relaxed) {
                 eprintln!("fontfinder: execution fc-cache -f in the background");
                 let _ = Command::new("fc-cache")

@@ -3,12 +3,12 @@ use gtk::*;
 
 #[derive(Clone)]
 pub struct Header {
-    pub container:      HeaderBar,
-    pub font_size:      SpinButton,
-    pub install:        Button,
-    pub uninstall:      Button,
+    pub container: HeaderBar,
+    pub font_size: SpinButton,
+    pub install: Button,
+    pub uninstall: Button,
     pub show_installed: CheckButton,
-    pub dark_preview:   CheckButton,
+    pub dark_preview: CheckButton,
 }
 
 macro_rules! button {

@@ -1,5 +1,5 @@
 use gtk::prelude::*;
-use gtk::{TextBuffer, SearchEntry};
+use gtk::{SearchEntry, TextBuffer};
 
 /// Obtains the entire inner string of a given text buffer.
 pub(crate) fn get_buffer(buffer: &TextBuffer) -> Option<String> {

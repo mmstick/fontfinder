@@ -1,6 +1,6 @@
 extern crate fontfinder;
-extern crate glib;
 extern crate gio;
+extern crate glib;
 extern crate gtk;
 extern crate webkit2gtk;
 
@@ -9,12 +9,12 @@ mod ui;
 
 use fontfinder::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
 use fontfinder::{dirs, html, FontError};
-use fontfinder::fonts::{self, FontsList};
+use fontfinder::fonts::{self, FontsList, Sorting};
 use gtk::*;
 use ui::{App, FontRow};
 use std::path::Path;
 use std::{process, str};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use webkit2gtk::*;
 use utils::{get_buffer, get_search};
@@ -43,26 +43,29 @@ fn main() {
 
     // Grab the information on Google's archive of free fonts.
     // I'm wrapping it in Arc so it can be shared across multiple closures.
-    let fonts_archive = match fonts::obtain() {
-        Ok(fonts_archive) => Arc::new(fonts_archive),
+    let fonts_archive = match fonts::obtain(Sorting::Trending) {
+        Ok(fonts_archive) => Arc::new(RwLock::new(fonts_archive)),
         Err(why) => {
             eprintln!("failed to get font archive: {}", why);
             process::exit(1);
         }
     };
 
-    // Collect a list of unique categories from that font list.
-    let categories = fonts_archive.get_categories();
     // Contains the ID of the currently-selected row, to cut down on lookups.
     let row_id = Arc::new(AtomicUsize::new(0));
 
-    // Initializes the complete structure of the GTK application.
-    // Contains all relevant widgets that we will manipulate.
-    let app = App::new(&fonts_archive, &categories);
+    let app = {
+        // Collect a list of unique categories from that font list.
+        let categories = fonts_archive.read().unwrap().get_categories();
 
-    // The following code will program the widgets in the UI. Each `clone()` will merely
-    // increment reference counters, and they exist to allow these widgets to be shared across
-    // multiple closures.
+        // Initializes the complete structure of the GTK application.
+        // Contains all relevant widgets that we will manipulate.
+        App::new(&fonts_archive.read().unwrap(), &categories)
+    };
+
+    // The following code will program the widgets in the UI. Each `clone()` will
+    // merely increment reference counters, and they exist to allow these
+    // widgets to be shared across multiple closures.
 
     {
         // Updates the UI when a row is selected.
@@ -104,7 +107,8 @@ fn main() {
                 match dirs::font_cache().ok_or(FontError::FontDirectory) {
                     Ok(path) => {
                         // Obtain the font from the font archive, so that we may get the files.
-                        let font = fonts_archive.get_family(&font.family).unwrap();
+                        let archive = fonts_archive.read().unwrap();
+                        let font = archive.get_family(&font.family).unwrap();
                         // This returns true if all variants of the font exists.
                         let font_exists = font.files.iter().all(|(variant, uri)| {
                             dirs::font_exists(&path, &font.family, &variant, &uri)
@@ -135,7 +139,8 @@ fn main() {
     let path = local_font_path;
     let show_installed = app.header.show_installed;
 
-    // A macro that's shared among each action that triggers an update of the preview.
+    // A macro that's shared among each action that triggers an update of the
+    // preview.
     macro_rules! update_preview {
         ($value:tt, $method:tt) => {{
             let sample = sample.clone();
@@ -181,7 +186,7 @@ fn main() {
             $value.$method(move |$value| {
                 if let Some(category) = category.get_active_text() {
                     filter_category(&category, get_search(&search), &rows.borrow(), |family| {
-                        show_installed.get_active() || !is_installed(&fonts_archive, family, &path)
+                        show_installed.get_active() || !is_installed(&fonts_archive.read().unwrap(), family, &path)
                     });
                 }
             });
@@ -196,6 +201,55 @@ fn main() {
     filter_fonts!(show_installed, connect_toggled);
 
     {
+        let category = category.clone();
+        let sort_by = app.main.sort_by.clone();
+        let fonts_archive = fonts_archive.clone();
+        let fonts_box = app.main.fonts_box.clone();
+        let rows = rows.clone();
+        let show_installed = show_installed.clone();
+        sort_by.connect_changed(move |sort_by| {
+            let sorting = match sort_by.get_active() {
+                0 => Sorting::Trending,
+                1 => Sorting::Popular,
+                2 => Sorting::DateAdded,
+                3 => Sorting::Alphabetical,
+                _ => unreachable!("unknown sorting"),
+            };
+
+            let mut fonts_archive = fonts_archive.write().unwrap();
+            *fonts_archive = match fonts::obtain(sorting) {
+                Ok(fonts_archive) => fonts_archive,
+                Err(why) => {
+                    eprintln!("failed to get font archive: {}", why);
+                    return;
+                }
+            };
+
+            fonts_box.get_children().iter().for_each(|c| c.destroy());
+            let mut fonts = rows.borrow_mut();
+            fonts.clear();
+
+            for font in &fonts_archive.items {
+                let row = FontRow::new(
+                    font.category.clone(),
+                    font.family.clone(),
+                    font.files.keys().cloned().collect(),
+                );
+                fonts_box.insert(&row.container, -1);
+                fonts.push(row);
+            }
+
+            fonts_box.show_all();
+
+            if let Some(category) = category.get_active_text() {
+                filter_category(&category, get_search(&search), &fonts, |family| {
+                    show_installed.get_active() || !is_installed(&fonts_archive, family, &path)
+                });
+            }
+        });
+    }
+
+    {
         // Programs the install button
         let install = app.header.install.clone();
         let uninstall = app.header.uninstall.clone();
@@ -206,7 +260,11 @@ fn main() {
         install.connect_clicked(move |install| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
-            match fonts_archive.download(&mut string, &font.family) {
+            match fonts_archive
+                .read()
+                .unwrap()
+                .download(&mut string, &font.family)
+            {
                 Ok(_) => {
                     install.set_visible(false);
                     uninstall.set_visible(true);
@@ -231,7 +289,11 @@ fn main() {
         uninstall.connect_clicked(move |uninstall| {
             let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
-            match fonts_archive.remove(&mut string, &font.family) {
+            match fonts_archive
+                .read()
+                .unwrap()
+                .remove(&mut string, &font.family)
+            {
                 Ok(_) => {
                     uninstall.set_visible(false);
                     install.set_visible(true);
@@ -251,8 +313,8 @@ fn main() {
     app.header.install.set_visible(false);
     app.header.uninstall.set_visible(false);
 
-    // Begins the main event loop of GTK, which will display the GUI and handle all the
-    // actions that were mapped to each of the widgets in the UI.
+    // Begins the main event loop of GTK, which will display the GUI and handle all
+    // the actions that were mapped to each of the widgets in the UI.
     gtk::main();
 }
 

@@ -10,7 +10,7 @@ use gtk::*;
 pub struct App {
     pub window: Window,
     pub header: Header,
-    pub main:   Main,
+    pub main: Main,
 }
 
 impl App {

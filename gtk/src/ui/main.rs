@@ -7,15 +7,16 @@ use webkit2gtk::*;
 
 #[derive(Clone)]
 pub struct Main {
-    pub container:     Paned,
-    pub categories:    ComboBoxText,
-    pub fonts_box:     ListBox,
-    pub fonts:         Rc<RefCell<Vec<FontRow>>>,
-    pub context:       WebContext,
-    pub view:          WebView,
-    pub sample_text:   TextView,
+    pub container: Paned,
+    pub categories: ComboBoxText,
+    pub sort_by: ComboBoxText,
+    pub fonts_box: ListBox,
+    pub fonts: Rc<RefCell<Vec<FontRow>>>,
+    pub context: WebContext,
+    pub view: WebView,
+    pub sample_text: TextView,
     pub sample_buffer: TextBuffer,
-    pub search:        SearchEntry,
+    pub search: SearchEntry,
 }
 
 impl Main {
@@ -43,20 +44,30 @@ impl Main {
 
         // The category menu for filtering based on category.
         let menu = ComboBoxText::new();
-        set_margin(&menu, 5, 5, 5, 5);
+        set_margin(&menu, 3, 5, 0, 5);
         menu.insert_text(0, "All");
         for (id, category) in categories.iter().enumerate() {
             menu.insert_text((id + 1) as i32, category.as_str());
         }
         menu.set_active(0);
 
+        // Ability to toggle between sorting methods.
+        let sort_by = ComboBoxText::new();
+        set_margin(&sort_by, 3, 5, 0, 5);
+        sort_by.insert_text(0, "Trending");
+        sort_by.insert_text(1, "Popular");
+        sort_by.insert_text(2, "Date Added");
+        sort_by.insert_text(3, "Alphabetical");
+        sort_by.set_active(0);
+
         // Search bar beneath the category menu for doing name-based filters.
         let search = SearchEntry::new();
-        set_margin(&search, 0, 5, 5, 5);
+        set_margin(&search, 3, 5, 0, 5);
 
         // Construct the left pane's box
         let lbox = Box::new(Orientation::Vertical, 0);
         lbox.pack_start(&menu, false, false, 0);
+        lbox.pack_start(&sort_by, false, false, 0);
         lbox.pack_start(&search, false, false, 0);
         lbox.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
         lbox.pack_start(&scroller, true, true, 0);
@@ -75,7 +86,8 @@ impl Main {
              incididunt ut labore et dolore magna aliqua.",
         );
 
-        // And assigns that text buffer to this text view, so the user can enter text into it.
+        // And assigns that text buffer to this text view, so the user can enter text
+        // into it.
         let sample_text = TextView::new_with_buffer(&buffer);
         sample_text.set_wrap_mode(WrapMode::Word);
         set_view_margins(&sample_text);
@@ -101,6 +113,7 @@ impl Main {
             sample_text,
             search,
             sample_buffer: buffer,
+            sort_by,
         }
     }
 }
@@ -108,9 +121,9 @@ impl Main {
 #[derive(Clone)]
 pub struct FontRow {
     pub container: ListBoxRow,
-    pub category:  String,
-    pub family:    String,
-    pub variants:  Vec<String>,
+    pub category: String,
+    pub family: String,
+    pub variants: Vec<String>,
 }
 
 impl FontRow {
@@ -119,7 +132,7 @@ impl FontRow {
         let label = Label::new("");
         label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
         label.set_halign(Align::Start);
-        label.set_margin_top(5);
+        label.set_margin_top(3);
         label.set_margin_start(6);
 
         // Store the label within the list box row.
@@ -134,7 +147,9 @@ impl FontRow {
         }
     }
 
-    pub fn set_visibility(&self, visibility: bool) { self.container.set_visible(visibility); }
+    pub fn set_visibility(&self, visibility: bool) {
+        self.container.set_visible(visibility);
+    }
 
     pub fn contains(&self, pattern: &str) -> bool {
         // TODO: do this without making any allocations.
