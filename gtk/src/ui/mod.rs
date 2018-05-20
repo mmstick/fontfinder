@@ -1,8 +1,10 @@
+mod fontlist;
 mod header;
 mod main;
 
 pub use self::header::Header;
-pub use self::main::{FontRow, Main};
+pub use self::main::Main;
+pub use self::fontlist::{FontList, FontRow};
 use fontfinder::fonts::FontsList;
 use gtk::*;
 

@@ -71,8 +71,7 @@ fn main() {
         // Updates the UI when a row is selected.
         let sample = app.main.sample_buffer.clone();
         let preview = app.main.view.clone();
-        let rows = app.main.fonts.clone();
-        let list = app.main.fonts_box.clone();
+        let list = app.main.fonts.clone();
         let uninstall = app.header.uninstall.clone();
         let install = app.header.install.clone();
         let title = app.header.container.clone();
@@ -80,14 +79,14 @@ fn main() {
         let row_id = row_id.clone();
         let fonts_archive = fonts_archive.clone();
         let dark_preview = app.header.dark_preview.clone();
-        list.connect_row_selected(move |_, row| {
+        list.clone().container.connect_row_selected(move |_, row| {
             if let Some(row) = row.as_ref() {
                 // Get the ID of the currently-selected row.
                 let id = row.get_index() as usize;
                 // Store that ID in an atomic value, for future re-use by other closures.
                 row_id.store(id, Ordering::SeqCst);
                 // Obtain the data relevant to the selected row, by it's ID.
-                let font = &(*rows.borrow())[id];
+                let font = &list.get_rows()[id];
                 // Set the header bar's title the name of the font.
                 title.set_title(font.family.as_str());
 
@@ -131,7 +130,7 @@ fn main() {
 
     let sample = app.main.sample_buffer;
     let preview = app.main.view;
-    let rows = app.main.fonts;
+    let list = app.main.fonts;
     let size = app.header.font_size;
     let dark_preview = app.header.dark_preview;
     let category = app.main.categories;
@@ -145,14 +144,14 @@ fn main() {
         ($value:tt, $method:tt) => {{
             let sample = sample.clone();
             let preview = preview.clone();
-            let rows = rows.clone();
+            let list = list.clone();
             let size = size.clone();
             let row_id = row_id.clone();
             let dark_preview = dark_preview.clone();
             #[allow(unused)]
             $value.$method(move |$value| {
                 get_buffer(&sample).map(|sample| {
-                    let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
+                    let font = &list.get_rows()[row_id.load(Ordering::SeqCst)];
                     html::generate(
                         &font.family,
                         &font.variants[..],
@@ -177,7 +176,7 @@ fn main() {
     macro_rules! filter_fonts {
         ($value:tt, $method:tt) => {{
             let category = category.clone();
-            let rows = rows.clone();
+            let list = list.clone();
             let search = search.clone();
             let path = path.clone();
             let fonts_archive = fonts_archive.clone();
@@ -185,7 +184,7 @@ fn main() {
             #[allow(unused)]
             $value.$method(move |$value| {
                 if let Some(category) = category.get_active_text() {
-                    filter_category(&category, get_search(&search), &rows.borrow(), |family| {
+                    filter_category(&category, get_search(&search), &list.get_rows(), |family| {
                         show_installed.get_active() || !is_installed(&fonts_archive.read().unwrap(), family, &path)
                     });
                 }
@@ -204,8 +203,7 @@ fn main() {
         let category = category.clone();
         let sort_by = app.main.sort_by.clone();
         let fonts_archive = fonts_archive.clone();
-        let fonts_box = app.main.fonts_box.clone();
-        let rows = rows.clone();
+        let list = list.clone();
         let show_installed = show_installed.clone();
         sort_by.connect_changed(move |sort_by| {
             let sorting = match sort_by.get_active() {
@@ -225,24 +223,10 @@ fn main() {
                 }
             };
 
-            fonts_box.get_children().iter().for_each(|c| c.destroy());
-            let mut fonts = rows.borrow_mut();
-            fonts.clear();
-
-            for font in &fonts_archive.items {
-                let row = FontRow::new(
-                    font.category.clone(),
-                    font.family.clone(),
-                    font.files.keys().cloned().collect(),
-                );
-                fonts_box.insert(&row.container, -1);
-                fonts.push(row);
-            }
-
-            fonts_box.show_all();
+            list.update(&fonts_archive.items);
 
             if let Some(category) = category.get_active_text() {
-                filter_category(&category, get_search(&search), &fonts, |family| {
+                filter_category(&category, get_search(&search), &list.get_rows(), |family| {
                     show_installed.get_active() || !is_installed(&fonts_archive, family, &path)
                 });
             }
@@ -254,11 +238,11 @@ fn main() {
         let install = app.header.install.clone();
         let uninstall = app.header.uninstall.clone();
         let row_id = row_id.clone();
-        let rows = rows.clone();
+        let list = list.clone();
         let fonts_archive = fonts_archive.clone();
         let installed = show_installed.clone();
         install.connect_clicked(move |install| {
-            let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
+            let font = &list.get_rows()[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
             match fonts_archive
                 .read()
@@ -284,10 +268,10 @@ fn main() {
         let install = app.header.install.clone();
         let uninstall = app.header.uninstall.clone();
         let row_id = row_id.clone();
-        let rows = rows.clone();
+        let list = list.clone();
         let fonts_archive = fonts_archive.clone();
         uninstall.connect_clicked(move |uninstall| {
-            let font = &(*rows.borrow())[row_id.load(Ordering::SeqCst)];
+            let font = &list.get_rows()[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
             match fonts_archive
                 .read()

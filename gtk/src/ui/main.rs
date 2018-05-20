@@ -1,17 +1,16 @@
 use utils::set_margin;
 use fontfinder::fonts::Font;
 use gtk::*;
-use std::cell::RefCell;
 use std::rc::Rc;
 use webkit2gtk::*;
+use super::FontList;
 
 #[derive(Clone)]
 pub struct Main {
     pub container: Paned,
     pub categories: ComboBoxText,
     pub sort_by: ComboBoxText,
-    pub fonts_box: ListBox,
-    pub fonts: Rc<RefCell<Vec<FontRow>>>,
+    pub fonts: Rc<FontList>,
     pub context: WebContext,
     pub view: WebView,
     pub sample_text: TextView,
@@ -24,23 +23,7 @@ impl Main {
         let container = Paned::new(Orientation::Vertical);
         let content = Paned::new(Orientation::Horizontal);
 
-        // Generate a list box from the list of fonts in the archive.
-        let fonts_box = ListBox::new();
-        let mut fonts = Vec::with_capacity(fonts_archive.len());
-        for font in fonts_archive {
-            let row = FontRow::new(
-                font.category.clone(),
-                font.family.clone(),
-                font.files.keys().cloned().collect(),
-            );
-            fonts_box.insert(&row.container, -1);
-            fonts.push(row);
-        }
-
-        // Allows the font list box to scroll
-        let scroller = ScrolledWindow::new(None, None);
-        scroller.set_min_content_width(200);
-        scroller.add(&fonts_box);
+        let fonts = FontList::new(fonts_archive);
 
         // The category menu for filtering based on category.
         let menu = ComboBoxText::new();
@@ -70,7 +53,7 @@ impl Main {
         lbox.pack_start(&sort_by, false, false, 0);
         lbox.pack_start(&search, false, false, 0);
         lbox.pack_start(&Separator::new(Orientation::Horizontal), false, false, 0);
-        lbox.pack_start(&scroller, true, true, 0);
+        lbox.pack_start(&fonts.scroller, true, true, 0);
 
         // Initializes the webkit2gtk preview that will display the fonts.
         let context = WebContext::get_default().unwrap();
@@ -106,8 +89,7 @@ impl Main {
         Main {
             container,
             categories: menu,
-            fonts_box,
-            fonts: Rc::new(RefCell::new(fonts)),
+            fonts: Rc::new(fonts),
             context,
             view,
             sample_text,
@@ -115,45 +97,6 @@ impl Main {
             sample_buffer: buffer,
             sort_by,
         }
-    }
-}
-
-#[derive(Clone)]
-pub struct FontRow {
-    pub container: ListBoxRow,
-    pub category: String,
-    pub family: String,
-    pub variants: Vec<String>,
-}
-
-impl FontRow {
-    pub fn new(category: String, family: String, variants: Vec<String>) -> FontRow {
-        // Create the inner label of the row that contains the family in bold.
-        let label = Label::new("");
-        label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
-        label.set_halign(Align::Start);
-        label.set_margin_top(3);
-        label.set_margin_start(6);
-
-        // Store the label within the list box row.
-        let container = ListBoxRow::new();
-        container.add(&label);
-
-        FontRow {
-            container,
-            category,
-            family,
-            variants,
-        }
-    }
-
-    pub fn set_visibility(&self, visibility: bool) {
-        self.container.set_visible(visibility);
-    }
-
-    pub fn contains(&self, pattern: &str) -> bool {
-        // TODO: do this without making any allocations.
-        self.family.to_lowercase().contains(&pattern.to_lowercase())
     }
 }
 
