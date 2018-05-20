@@ -9,15 +9,15 @@ mod ui;
 
 use fontfinder::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
 use fontfinder::{dirs, html, FontError};
-use fontfinder::fonts::{self, FontsList, Sorting};
+use fontfinder::fonts::{self, Sorting};
 use gtk::*;
-use ui::{App, FontRow};
-use std::path::Path;
-use std::{process, str};
+use ui::App;
+use std::process;
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use webkit2gtk::*;
-use utils::{get_buffer, get_search};
+use utils::get_buffer;
 
 fn main() {
     glib::set_program_name("Font Finder".into());
@@ -60,7 +60,7 @@ fn main() {
 
         // Initializes the complete structure of the GTK application.
         // Contains all relevant widgets that we will manipulate.
-        App::new(&fonts_archive.read().unwrap(), &categories)
+        Rc::new(App::new(&fonts_archive.read().unwrap(), &categories))
     };
 
     // The following code will program the widgets in the UI. Each `clone()` will
@@ -69,36 +69,29 @@ fn main() {
 
     {
         // Updates the UI when a row is selected.
-        let sample = app.main.sample_buffer.clone();
-        let preview = app.main.view.clone();
-        let list = app.main.fonts.clone();
-        let uninstall = app.header.uninstall.clone();
-        let install = app.header.install.clone();
-        let title = app.header.container.clone();
-        let size = app.header.font_size.clone();
+        let app = app.clone();
         let row_id = row_id.clone();
         let fonts_archive = fonts_archive.clone();
-        let dark_preview = app.header.dark_preview.clone();
-        list.clone().container.connect_row_selected(move |_, row| {
+        app.main.fonts.container.clone().connect_row_selected(move |_, row| {
             if let Some(row) = row.as_ref() {
                 // Get the ID of the currently-selected row.
                 let id = row.get_index() as usize;
                 // Store that ID in an atomic value, for future re-use by other closures.
                 row_id.store(id, Ordering::SeqCst);
                 // Obtain the data relevant to the selected row, by it's ID.
-                let font = &list.get_rows()[id];
+                let font = &app.main.fonts.get_rows()[id];
                 // Set the header bar's title the name of the font.
-                title.set_title(font.family.as_str());
+                app.header.container.set_title(font.family.as_str());
 
                 // If there is some sample text, update the font preview.
-                if let Some(sample_text) = get_buffer(&sample) {
+                if let Some(sample_text) = get_buffer(&app.main.sample_buffer) {
                     html::generate(
                         &font.family,
                         &font.variants,
-                        size.get_value(),
+                        app.header.font_size.get_value(),
                         &sample_text[..],
-                        dark_preview.get_active(),
-                        |html| preview.load_html(html, None),
+                        app.header.dark_preview.get_active(),
+                        |html| app.main.view.load_html(html, None),
                     );
                 }
 
@@ -108,104 +101,103 @@ fn main() {
                         // Obtain the font from the font archive, so that we may get the files.
                         let archive = fonts_archive.read().unwrap();
                         let font = archive.get_family(&font.family).unwrap();
+
                         // This returns true if all variants of the font exists.
                         let font_exists = font.files.iter().all(|(variant, uri)| {
                             dirs::font_exists(&path, &font.family, &variant, &uri)
                         });
 
-                        install.set_visible(!font_exists);
-                        uninstall.set_visible(font_exists);
+                        app.header.install.set_visible(!font_exists);
+                        app.header.uninstall.set_visible(font_exists);
                     }
                     Err(why) => {
                         // Write the error to stderr & the console.
                         eprintln!("unable to get font cache: {}", why);
 
-                        install.set_visible(false);
-                        uninstall.set_visible(false);
+                        app.header.install.set_visible(false);
+                        app.header.uninstall.set_visible(false);
                     }
                 }
             }
         });
     }
 
-    let sample = app.main.sample_buffer;
-    let preview = app.main.view;
-    let list = app.main.fonts;
-    let size = app.header.font_size;
-    let dark_preview = app.header.dark_preview;
-    let category = app.main.categories;
-    let search = app.main.search;
     let path = local_font_path;
-    let show_installed = app.header.show_installed;
 
     // A macro that's shared among each action that triggers an update of the
     // preview.
     macro_rules! update_preview {
-        ($value:tt, $method:tt) => {{
-            let sample = sample.clone();
-            let preview = preview.clone();
-            let list = list.clone();
-            let size = size.clone();
-            let row_id = row_id.clone();
-            let dark_preview = dark_preview.clone();
-            #[allow(unused)]
-            $value.$method(move |$value| {
-                get_buffer(&sample).map(|sample| {
-                    let font = &list.get_rows()[row_id.load(Ordering::SeqCst)];
-                    html::generate(
-                        &font.family,
-                        &font.variants[..],
-                        size.get_value(),
-                        &sample,
-                        dark_preview.get_active(),
-                        |html| preview.load_html(html, None),
-                    )
+        ($($value:ident => $method:tt),+) => {{
+            $({
+                let app = app.clone();
+                let row_id = row_id.clone();
+                #[allow(unused)]
+                $value.$method(move |$value| {
+                    get_buffer(&app.main.sample_buffer).map(|sample| {
+                        let font = &app.main.fonts.get_rows()[row_id.load(Ordering::SeqCst)];
+                        html::generate(
+                            &font.family,
+                            &font.variants[..],
+                            app.header.font_size.get_value(),
+                            &sample,
+                            app.header.dark_preview.get_active(),
+                            |html| app.main.view.load_html(html, None),
+                        )
+                    });
                 });
-            });
+            })+
         }};
     }
 
-    // Triggers when the font size spin button's value is changed.
-    update_preview!(size, connect_property_value_notify);
-    // Triggers when the dark preview check button is toggled.
-    update_preview!(dark_preview, connect_toggled);
-    // Triggers when the sample text is changed.
-    update_preview!(sample, connect_changed);
+    {
+        let size = app.header.font_size.clone();
+        let dark_preview = app.header.dark_preview.clone();
+        let sample = app.main.sample_buffer.clone();
+
+        update_preview!{
+            // Triggers when the font size spin button's value is changed.
+            size => connect_property_value_notify,
+            // Triggers when the dark preview check button is toggled.
+            dark_preview => connect_toggled,
+            // Triggers when the sample text is changed.
+            sample => connect_changed
+        };
+    }
 
     // A macro that's shared among each action that triggers font filtration.
     macro_rules! filter_fonts {
-        ($value:tt, $method:tt) => {{
-            let category = category.clone();
-            let list = list.clone();
-            let search = search.clone();
-            let path = path.clone();
-            let fonts_archive = fonts_archive.clone();
-            let show_installed = show_installed.clone();
-            #[allow(unused)]
-            $value.$method(move |$value| {
-                if let Some(category) = category.get_active_text() {
-                    filter_category(&category, get_search(&search), &list.get_rows(), |family| {
-                        show_installed.get_active() || !is_installed(&fonts_archive.read().unwrap(), family, &path)
-                    });
-                }
-            });
+        ($($value:ident => $method:tt),+) => {{
+            $({
+                let path = path.clone();
+                let app = app.clone();
+                let fonts_archive = fonts_archive.clone();
+                #[allow(unused)]
+                $value.$method(move |$value| {
+                    app.filter_categories(&path, &fonts_archive.read().unwrap());
+                });
+            })+
         }};
     }
 
-    // Triggers when the category combo box is changed.
-    filter_fonts!(category, connect_changed);
-    // Triggers when the search entry is changed.
-    filter_fonts!(search, connect_search_changed);
-    // Triggers when the show installed button is toggled.
-    filter_fonts!(show_installed, connect_toggled);
+    {
+        let category = app.main.categories.clone();
+        let search = app.main.search.clone();
+        let show_installed = app.header.show_installed.clone();
+
+        filter_fonts!{
+            // Triggers when the category combo box is changed.
+            category => connect_changed,
+            // Triggers when the search entry is changed.
+            search => connect_search_changed,
+            // Triggers when the show installed button is toggled.
+            show_installed => connect_toggled
+        }
+    }
 
     {
-        let category = category.clone();
-        let sort_by = app.main.sort_by.clone();
+        let app = app.clone();
         let fonts_archive = fonts_archive.clone();
-        let list = list.clone();
-        let show_installed = show_installed.clone();
-        sort_by.connect_changed(move |sort_by| {
+        app.main.sort_by.clone().connect_changed(move |sort_by| {
             let sorting = match sort_by.get_active() {
                 0 => Sorting::Trending,
                 1 => Sorting::Popular,
@@ -223,26 +215,18 @@ fn main() {
                 }
             };
 
-            list.update(&fonts_archive.items);
-
-            if let Some(category) = category.get_active_text() {
-                filter_category(&category, get_search(&search), &list.get_rows(), |family| {
-                    show_installed.get_active() || !is_installed(&fonts_archive, family, &path)
-                });
-            }
+            app.main.fonts.update(&fonts_archive.items);
+            app.filter_categories(&path, &fonts_archive);
         });
     }
 
     {
         // Programs the install button
-        let install = app.header.install.clone();
-        let uninstall = app.header.uninstall.clone();
+        let app = app.clone();
         let row_id = row_id.clone();
-        let list = list.clone();
         let fonts_archive = fonts_archive.clone();
-        let installed = show_installed.clone();
-        install.connect_clicked(move |install| {
-            let font = &list.get_rows()[row_id.load(Ordering::SeqCst)];
+        app.header.install.clone().connect_clicked(move |install| {
+            let font = &app.main.fonts.get_rows()[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
             match fonts_archive
                 .read()
@@ -251,8 +235,8 @@ fn main() {
             {
                 Ok(_) => {
                     install.set_visible(false);
-                    uninstall.set_visible(true);
-                    font.container.set_visible(installed.get_active());
+                    app.header.uninstall.set_visible(true);
+                    font.container.set_visible(app.header.show_installed.get_active());
                     RUN_FC_CACHE.store(true, Ordering::Relaxed);
                     eprintln!("{} installed", &font.family);
                 }
@@ -265,13 +249,10 @@ fn main() {
 
     {
         // Programs the uninstall button
-        let install = app.header.install.clone();
-        let uninstall = app.header.uninstall.clone();
-        let row_id = row_id.clone();
-        let list = list.clone();
+        let app = app.clone();
         let fonts_archive = fonts_archive.clone();
-        uninstall.connect_clicked(move |uninstall| {
-            let font = &list.get_rows()[row_id.load(Ordering::SeqCst)];
+        app.header.uninstall.clone().connect_clicked(move |uninstall| {
+            let font = &app.main.fonts.get_rows()[row_id.load(Ordering::SeqCst)];
             let mut string = Vec::new();
             match fonts_archive
                 .read()
@@ -280,7 +261,7 @@ fn main() {
             {
                 Ok(_) => {
                     uninstall.set_visible(false);
-                    install.set_visible(true);
+                    app.header.install.set_visible(true);
                     RUN_FC_CACHE.store(true, Ordering::Relaxed);
                     eprintln!("{} uninstalled", &font.family);
                 }
@@ -300,27 +281,4 @@ fn main() {
     // Begins the main event loop of GTK, which will display the GUI and handle all
     // the actions that were mapped to each of the widgets in the UI.
     gtk::main();
-}
-
-/// Filters visibility of associated font ListBoxRow's, according to a given category filter,
-/// The contents of the search bar, and a closure that determines whether the font is installed
-/// or not.
-fn filter_category<F>(category: &str, search: Option<String>, fonts: &[FontRow], installed: F)
-where
-    F: Fn(&str) -> bool,
-{
-    fonts.iter().for_each(|font| {
-        let visible = (category == "All" || &font.category == category)
-            && search.as_ref().map_or(true, |s| font.contains(s.as_str()));
-
-        font.set_visibility(visible && installed(&font.family));
-    })
-}
-
-/// Evaluates whether each variant of a given font family is locally installed.
-fn is_installed(archive: &FontsList, family: &str, path: &Path) -> bool {
-    let font = archive.get_family(&family).unwrap();
-    font.files
-        .iter()
-        .all(|(variant, uri)| dirs::font_exists(path, family, variant.as_str(), uri.as_str()))
 }

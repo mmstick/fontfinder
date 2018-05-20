@@ -73,7 +73,7 @@ impl Main {
         // into it.
         let sample_text = TextView::new_with_buffer(&buffer);
         sample_text.set_wrap_mode(WrapMode::Word);
-        set_view_margins(&sample_text);
+        set_margin(&sample_text, 5, 5, 5, 5);
 
         // Wraps up the sample text and it's associated preview as the right panel.
         let rbox = Box::new(Orientation::Vertical, 0);
@@ -98,11 +98,4 @@ impl Main {
             sort_by,
         }
     }
-}
-
-fn set_view_margins(view: &TextView) {
-    view.set_top_margin(5);
-    view.set_right_margin(5);
-    view.set_bottom_margin(5);
-    view.set_left_margin(5);
 }
