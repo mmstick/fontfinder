@@ -1,12 +1,13 @@
 extern crate fontfinder;
+extern crate glib;
 extern crate gio;
 extern crate gtk;
 extern crate webkit2gtk;
 
-mod fc_cache;
+mod utils;
 mod ui;
 
-use self::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
+use fontfinder::fc_cache::{fc_cache_event_loop, RUN_FC_CACHE};
 use fontfinder::{dirs, html, FontError};
 use fontfinder::fonts::{self, FontsList};
 use gtk::*;
@@ -16,8 +17,12 @@ use std::{process, str};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use webkit2gtk::*;
+use utils::{get_buffer, get_search};
 
 fn main() {
+    glib::set_program_name("Font Finder".into());
+    glib::set_application_name("Font Finder");
+
     // Spawn a thread to wait for fc-cache events
     fc_cache_event_loop();
 
@@ -264,22 +269,6 @@ where
 
         font.set_visibility(visible && installed(&font.family));
     })
-}
-
-/// Obtains the entire inner string of a given text buffer.
-fn get_buffer(buffer: &TextBuffer) -> Option<String> {
-    let start = buffer.get_start_iter();
-    let end = buffer.get_end_iter();
-    buffer.get_text(&start, &end, true)
-}
-
-/// Obtains the value of the search entry from the UI
-fn get_search(search: &SearchEntry) -> Option<String> {
-    match search.get_text().take() {
-        Some(ref text) if text.is_empty() => None,
-        Some(text) => Some(text),
-        None => None,
-    }
 }
 
 /// Evaluates whether each variant of a given font family is locally installed.

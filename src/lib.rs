@@ -5,6 +5,7 @@ extern crate serde;
 extern crate serde_json;
 
 pub mod dirs;
+pub mod fc_cache;
 pub mod fonts;
 pub mod html;
 

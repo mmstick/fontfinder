@@ -1,4 +1,4 @@
-use super::set_margin;
+use utils::{set_class, set_margin};
 use gtk::*;
 
 #[derive(Clone)]
@@ -73,9 +73,4 @@ impl Header {
             dark_preview,
         }
     }
-}
-
-/// A simple convenience function for adding a style class to a widget.
-fn set_class<W: WidgetExt>(widget: &W, class: &str) {
-    widget.get_style_context().map(|c| c.add_class(class));
 }

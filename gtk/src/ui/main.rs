@@ -1,4 +1,4 @@
-use super::set_margin;
+use utils::set_margin;
 use fontfinder::fonts::Font;
 use gtk::*;
 use std::cell::RefCell;
