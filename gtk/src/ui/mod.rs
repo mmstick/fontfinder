@@ -1,7 +1,9 @@
+mod connected;
 mod fontlist;
 mod header;
 mod main;
 
+pub use self::connected::{Connect, Connected};
 pub use self::header::Header;
 pub use self::main::Main;
 pub use self::fontlist::{FontList, FontRow};
@@ -12,7 +14,15 @@ use gtk::*;
 use webkit2gtk::*;
 
 use utils::{get_buffer, get_search};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::RwLock;
+use std::sync::atomic::AtomicUsize;
+
+pub struct State {
+    pub fonts_archive: RwLock<FontsList>,
+    pub row_id: AtomicUsize,
+    pub path: PathBuf,
+}
 
 #[derive(Clone)]
 pub struct App {
@@ -54,7 +64,7 @@ impl App {
                 |family| {
                     self.header.show_installed.get_active()
                         || !is_installed(fonts_archive, family, path)
-                }
+                },
             );
         }
     }
@@ -72,7 +82,6 @@ impl App {
         }
     }
 }
-
 
 /// Filters visibility of associated font ListBoxRow's, according to a given category filter,
 /// The contents of the search bar, and a closure that determines whether the font is installed
