@@ -7,7 +7,6 @@ use super::{App, State};
 use std::sync::atomic::Ordering;
 use gtk::prelude::*;
 use gtk;
-use utils::get_buffer;
 
 pub struct Connected(Rc<App>);
 
@@ -28,7 +27,6 @@ impl Connected {
 
 pub trait Connect {
     fn connect_events(self, state: Arc<State>) -> Connected;
-
     fn connect_row_selected(&self, state: Arc<State>);
     fn connect_preview_updates(&self, state: Arc<State>);
     fn connect_filter_fonts(&self, state: Arc<State>);
@@ -63,8 +61,7 @@ impl Connect for Rc<App> {
                 Ok(_) => {
                     install.set_visible(false);
                     app.header.uninstall.set_visible(true);
-                    font.container
-                        .set_visible(app.header.show_installed.get_active());
+                    font.set_visible(app.header.show_installed.get_active());
                     RUN_FC_CACHE.store(true, Ordering::Relaxed);
                     eprintln!("{} installed", &font.family);
                 }
@@ -159,37 +156,32 @@ impl Connect for Rc<App> {
     }
 
     fn connect_preview_updates(&self, state: Arc<State>) {
-        // A macro that's shared among each action that triggers an update of the
-        // preview.
-        macro_rules! update_preview {
-            ($($value:ident => $method:tt),+) => {{
-                $({
-                    let app = self.clone();
-                    let state = state.clone();
-                    #[allow(unused)]
-                    $value.$method(move |$value| {
-                        get_buffer(&app.main.sample_buffer).map(|sample| {
-                            let font = &app.main.fonts.get_rows()[state.row_id.load(Ordering::SeqCst)];
-                            app.update_preview(font);
-                        });
-                    });
-                })+
-            }};
+        // This closure will be shared by multiple GTK signals. Alternative to the macro solution.
+        let update_preview = Rc::new({
+            let app = self.clone();
+            let state = state.clone();
+            move || {
+                let font = &app.main.fonts.get_rows()[state.row_id.load(Ordering::SeqCst)];
+                app.update_preview(font);
+            }
+        });
+
+        {
+            // Updates the preview when the font size has chanegd.
+            let update_preview = update_preview.clone();
+            self.header.font_size.connect_property_value_notify(move |_| update_preview());
         }
 
         {
-            let size = self.header.font_size.clone();
-            let dark_preview = self.header.dark_preview.clone();
-            let sample = self.main.sample_buffer.clone();
+            // Updates the preview when the sample text has been modified.
+            let update_preview = update_preview.clone();
+            self.main.sample_buffer.connect_changed(move |_| update_preview());
+        }
 
-            update_preview!{
-                // Triggers when the font size spin button's value is changed.
-                size => connect_property_value_notify,
-                // Triggers when the dark preview check button is toggled.
-                dark_preview => connect_toggled,
-                // Triggers when the sample text is changed.
-                sample => connect_changed
-            };
+        {
+            // Updates the preview when the dark preview button has been toggled.
+            let update_preview = update_preview.clone();
+            self.header.dark_preview.connect_toggled(move |_| update_preview());
         }
     }
 
@@ -197,7 +189,6 @@ impl Connect for Rc<App> {
         let app = self.clone();
         app.main
             .fonts
-            .container
             .clone()
             .connect_row_selected(move |_, row| {
                 if let Some(row) = row.as_ref() {
@@ -208,7 +199,7 @@ impl Connect for Rc<App> {
                     // Obtain the data relevant to the selected row, by it's ID.
                     let font = &app.main.fonts.get_rows()[id];
                     // Set the header bar's title the name of the font.
-                    app.header.container.set_title(font.family.as_str());
+                    app.header.set_title(font.family.as_str());
 
                     // If there is some sample text, update the font preview.
                     app.update_preview(font);

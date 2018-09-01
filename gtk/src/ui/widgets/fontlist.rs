@@ -1,48 +1,49 @@
 use fontfinder::fonts::Font;
 use gtk::prelude::*;
-use gtk::{Align, Label, ListBox, ListBoxRow, ScrolledWindow};
+use gtk;
 use std::cell::{Ref, RefCell};
+use std::ops::Deref;
 
 #[derive(Clone)]
 pub struct FontList {
-    pub container: ListBox,
-    pub scroller: ScrolledWindow,
+    container: gtk::ListBox,
+    pub scroller: gtk::ScrolledWindow,
     fonts: RefCell<Vec<FontRow>>,
+}
+
+impl Deref for FontList {
+    type Target = gtk::ListBox;
+    fn deref(&self) -> &Self::Target {
+        &self.container
+    }
 }
 
 impl FontList {
     pub fn new(fonts_archive: &[Font]) -> FontList {
-        let container = ListBox::new();
-        let mut fonts = Vec::with_capacity(fonts_archive.len());
-        for font in fonts_archive {
-            let row = FontRow::new(
-                font.category.clone(),
-                font.family.clone(),
-                font.files.keys().cloned().collect(),
-            );
-            container.insert(&row.container, -1);
-            fonts.push(row);
-        }
+        let container = gtk::ListBox::new();
+        let fonts = Vec::with_capacity(fonts_archive.len());
 
         // Allows the font list box to scroll
-        let scroller = ScrolledWindow::new(None, None);
-        scroller.set_min_content_width(200);
-        scroller.add(&container);
+        let scroller = cascade! {
+            gtk::ScrolledWindow::new(None, None);
+            ..set_property_hscrollbar_policy(gtk::PolicyType::Never);
+            ..set_min_content_width(200);
+            ..add(&container);
+        };
 
-        FontList {
+        let list = FontList {
             container,
             scroller,
             fonts: RefCell::new(fonts),
-        }
+        };
+
+        list.update(fonts_archive);
+        list
     }
 
     pub fn update(&self, fonts_archive: &[Font]) {
-        self.container
-            .get_children()
-            .iter()
-            .for_each(|c| c.destroy());
+        self.get_children().iter().for_each(|c| c.destroy());
         let mut fonts = self.fonts.borrow_mut();
-
         fonts.clear();
 
         for font in fonts_archive {
@@ -51,11 +52,11 @@ impl FontList {
                 font.family.clone(),
                 font.files.keys().cloned().collect(),
             );
-            self.container.insert(&row.container, -1);
+            self.insert(&row.container, -1);
             fonts.push(row);
         }
 
-        self.container.show_all();
+        self.show_all();
     }
 
     pub fn get_rows<'a>(&'a self) -> Ref<'a, Vec<FontRow>> {
@@ -65,23 +66,38 @@ impl FontList {
 
 #[derive(Clone)]
 pub struct FontRow {
-    pub container: ListBoxRow,
+    container: gtk::ListBoxRow,
     pub category: String,
     pub family: String,
     pub variants: Vec<String>,
 }
 
+impl AsRef<gtk::ListBoxRow> for FontRow {
+    fn as_ref(&self) -> &gtk::ListBoxRow {
+        &self.container
+    }
+}
+
+impl Deref for FontRow {
+    type Target = gtk::ListBoxRow;
+    fn deref(&self) -> &Self::Target {
+        &self.container
+    }
+}
+
 impl FontRow {
     pub fn new(category: String, family: String, variants: Vec<String>) -> FontRow {
         // Create the inner label of the row that contains the family in bold.
-        let label = Label::new("");
-        label.set_markup(&["<b>", family.as_str(), "</b>"].concat());
-        label.set_halign(Align::Start);
-        label.set_margin_top(3);
-        label.set_margin_start(6);
+        let label = cascade! {
+            gtk::Label::new(None);
+            ..set_markup(&["<b>", family.as_str(), "</b>"].concat());
+            ..set_halign(gtk::Align::Start);
+            ..set_margin_top(3);
+            ..set_margin_start(6);
+        };
 
         // Store the label within the list box row.
-        let container = ListBoxRow::new();
+        let container = gtk::ListBoxRow::new();
         container.add(&label);
 
         FontRow {
@@ -90,10 +106,6 @@ impl FontRow {
             family,
             variants,
         }
-    }
-
-    pub fn set_visibility(&self, visibility: bool) {
-        self.container.set_visible(visibility);
     }
 
     pub fn contains(&self, pattern: &str) -> bool {

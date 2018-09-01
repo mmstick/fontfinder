@@ -5,7 +5,7 @@ description = "Font Finder Library"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/mmstick/fontfinder"
-version = "1.4.0"
+version = "1.4.1"
 
 [workspace]
 members = ["gtk"]

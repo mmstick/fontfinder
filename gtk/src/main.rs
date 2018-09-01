@@ -1,3 +1,8 @@
+#![allow(unknown_lints)]
+#![allow(option_map_unit_fn)]
+
+#[macro_use]
+extern crate cascade;
 extern crate fontfinder;
 extern crate gio;
 extern crate glib;
