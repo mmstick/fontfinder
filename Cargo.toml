@@ -5,18 +5,21 @@ description = "Font Finder Library"
 license-file = "LICENSE"
 readme = "README.md"
 repository = "https://github.com/mmstick/fontfinder"
-version = "1.4.1"
+version = "1.5.0"
 
 [workspace]
 members = ["gtk"]
 
 [dependencies]
-failure = "0.1"
-failure_derive = "0.1"
+failure = "0.1.2"
+failure_derive = "0.1.2"
 horrorshow = "0.6"
 itertools = "0.7"
 lazy_static = "1.0"
-reqwest = "0.8"
+reqwest = "0.9.5"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+
+# Fix for rustc 1.28.0
+encoding_rs = "=0.8.10"
