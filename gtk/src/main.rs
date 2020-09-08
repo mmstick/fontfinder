@@ -8,7 +8,7 @@ mod utils;
 mod ui;
 
 use fontfinder::fc_cache::fc_cache_event_loop;
-use fontfinder::{dirs, FontError};
+use fontfinder::dirs;
 use fontfinder::fonts::{self, Sorting};
 use self::ui::{App, Connect, State};
 use std::process;
@@ -30,10 +30,10 @@ fn main() {
     }
 
     // Grabs the local font directory, which is "~/.local/share/fonts/"
-    let path = match dirs::font_cache().ok_or(FontError::FontDirectory) {
+    let path = match dirs::font_cache() {
         Ok(path) => path,
         Err(why) => {
-            eprintln!("failed to get font archive: {}", why);
+            eprintln!("{}", why);
             process::exit(1);
         }
     };
@@ -43,7 +43,7 @@ fn main() {
     let fonts_archive = match fonts::obtain(Sorting::Trending) {
         Ok(fonts_archive) => RwLock::new(fonts_archive),
         Err(why) => {
-            eprintln!("failed to get font archive: {}", why);
+            eprintln!("failed to get font archive: {:?}", why);
             process::exit(1);
         }
     };

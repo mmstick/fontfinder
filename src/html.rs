@@ -1,5 +1,5 @@
 use horrorshow::helper::doctype;
-use itertools::sorted;
+use itertools::{sorted};
 
 const FONT_URL: &str = "http://fonts.googleapis.com/css?family=";
 
@@ -19,7 +19,7 @@ pub fn generate<F: Fn(&str)>(
 ) {
     // Creates a sorted list of font style variants obtained from Google.
     // The variants need to be modified to adhere to Google's font CSS API.
-    let variants = sorted(variants.iter().map(|x| get_style(x)));
+    let variants: Vec<&str> = sorted(variants.iter().map(|x| get_style(x))).collect();
 
     // Obtains the stylesheet for the given font family from Google's font server,
     // additionally ensuring that each variant of the font is included.

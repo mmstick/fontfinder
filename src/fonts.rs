@@ -1,10 +1,9 @@
-use dirs;
+use anyhow::Context;
+use crate::dirs;
 use itertools::Itertools;
-use reqwest::{self, Client};
 use std::collections::HashMap;
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
-use FontError;
 
 const API_KEY: &str = "AIzaSyDpvpba_5RvJSvmXEJS7gZDezDaMlVTo4c";
 
@@ -54,21 +53,19 @@ pub struct FontsList {
 
 impl FontsList {
     /// Downloads/installs each variant of a given font family.
-    pub fn download<W>(&self, writer: &mut W, family: &str) -> Result<(), FontError>
+    pub fn download<W>(&self, writer: &mut W, family: &str) -> anyhow::Result<()>
     where
         W: Write,
     {
-        // Initialize a client that will be re-used between requests.
-        let client = Client::new();
-
         // The base path of the local font directory will be used to construct future
         // file paths.
-        let path = dirs::font_cache().ok_or(FontError::FontDirectory)?;
+        let path = dirs::font_cache().context("error getting font directory")?;
+
         // Recursively creates the aforementioned path if it does not already exist.
         dirs::recursively_create(&path)?;
 
         // Finds the given font in the font list and return it's reference.
-        let font = self.get_family(family).ok_or(FontError::FontNotFound)?;
+        let font = self.get_family(family).context("font family not found in font list")?;
 
         // Download/install each variant of the given font family.
         for (variant, uri) in &font.files {
@@ -79,26 +76,30 @@ impl FontsList {
             let _ = writer.write(format!("Installing '{:?}'\n", path).as_bytes());
 
             // GET the font variant from Google's servers.
-            let mut data = client.get(uri.as_str()).send()?;
+            let data = ureq::get(uri.as_str()).call();
+
+            if let Some(error) = data.synthetic_error() {
+                return Err(anyhow!("{}", error)).context("failed to fetch font file")
+            }
 
             // Then create that file for writing, and write the font's data to the file.
             let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
-            io::copy(&mut data, &mut file)?;
+            io::copy(&mut data.into_reader(), &mut file)?;
         }
 
         Ok(())
     }
 
     /// Removes the installed font from the system.
-    pub fn remove<W>(&self, writer: &mut W, family: &str) -> Result<(), FontError>
+    pub fn remove<W>(&self, writer: &mut W, family: &str) -> anyhow::Result<()>
     where
         W: Write,
     {
         // Get the base directory of the local font directory
-        let path = dirs::font_cache().ok_or(FontError::FontDirectory)?;
+        let path = dirs::font_cache().context("error getting font directory")?;
 
         // Find the given font in the font list and return it's reference.
-        let font = self.get_family(family).ok_or(FontError::FontNotFound)?;
+        let font = self.get_family(family).context("font family not found in font list")?;
 
         // Remove each variant of the given font family.
         for (variant, uri) in &font.files {
@@ -156,7 +157,7 @@ pub enum Sorting {
 
 /// Obtains the list of fonts from Google's font archive, whereby serde is automatically
 /// deserializing the JSON into the `FontsList` structure.
-pub fn obtain(sort_by: Sorting) -> reqwest::Result<FontsList> {
+pub fn obtain(sort_by: Sorting) -> anyhow::Result<FontsList> {
     let url: &'static str = match sort_by {
         Sorting::Alphabetical => URL_ALPHA.as_str(),
         Sorting::DateAdded => URL_DATE.as_str(),
@@ -164,5 +165,11 @@ pub fn obtain(sort_by: Sorting) -> reqwest::Result<FontsList> {
         Sorting::Trending => URL_TRENDING.as_str(),
     };
 
-    reqwest::get(url)?.json()
+    let resp = ureq::get(url).call();
+    if let Some(error) = resp.synthetic_error() {
+        Err(anyhow!("{}", error)).context("failed to fetch fonts from server")
+    } else {
+        resp.into_json_deserialize::<FontsList>()
+            .context("failed to deserialize JSON response")
+    }
 }

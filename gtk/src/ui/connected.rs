@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::sync::Arc;
-use fontfinder::{dirs, FontError};
+use fontfinder::dirs;
 use fontfinder::fc_cache::RUN_FC_CACHE;
 use fontfinder::fonts::{self, Sorting};
 use super::{App, State};
@@ -205,7 +205,7 @@ impl Connect for Rc<App> {
                     app.update_preview(font);
 
                     // Then set the visibility of the Install & Uninstall buttons accordingly.
-                    match dirs::font_cache().ok_or(FontError::FontDirectory) {
+                    match dirs::font_cache() {
                         Ok(path) => {
                             // Obtain the font from the font archive, so that we may get the files.
                             let archive = state.fonts_archive.read().unwrap();
