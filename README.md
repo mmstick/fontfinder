@@ -1,18 +1,12 @@
 # Font Finder
 
-Have you RIIR lately? This project is a clean Rust implementation of
-[TypeCatcher](https://github.com/andrewsomething/typecatcher/), which took
-about two days. It is a GTK3 application for browsing through and installing
-fonts from [Google's font archive](https://fonts.google.com/) from the comfort
-of your Linux desktop. Compared to TypeCatcher, which is written in Python,
-Font Finder also enables the ability to filter fonts by their categories,
-has zero Python runtime dependencies, and has much better performance &
-resource consumption.
+This project is a from-scratch implementation of [TypeCatcher](https://github.com/andrewsomething/typecatcher/) in Rust. It is a GTK3 application for browsing through and installing fonts from [Google's font archive](https://fonts.google.com/) from the comfort of your Linux desktop.
 
 ## Installation Instructions
 
 ```
-make && sudo make install
+make
+sudo make install prefix=/usr/local
 ```
 
 ## Requirements
