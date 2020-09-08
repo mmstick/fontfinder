@@ -25,7 +25,7 @@ impl FontList {
 
         // Allows the font list box to scroll
         let scroller = cascade! {
-            gtk::ScrolledWindow::new(None, None);
+            gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None);
             ..set_property_hscrollbar_policy(gtk::PolicyType::Never);
             ..set_min_content_width(200);
             ..add(&container);
@@ -42,7 +42,7 @@ impl FontList {
     }
 
     pub fn update(&self, fonts_archive: &[Font]) {
-        self.get_children().iter().for_each(|c| c.destroy());
+        self.get_children().iter().for_each(|c| unsafe { c.destroy() });
         let mut fonts = self.fonts.borrow_mut();
         fonts.clear();
 

@@ -1,4 +1,4 @@
-use utils::set_margin;
+use crate::utils::set_margin;
 use fontfinder::fonts::Font;
 use gtk::prelude::*;
 use gtk;
@@ -29,7 +29,7 @@ impl Main {
             | set_margin(&menu, 3, 5, 0, 5);
             ..append_text("All");
             | categories.iter().for_each(|c| menu.append_text(c.as_str()));
-            ..set_active(0);
+            ..set_active(Some(0));
         };
 
         // Ability to toggle between sorting methods.
@@ -40,7 +40,7 @@ impl Main {
             ..append_text("Popular");
             ..append_text("Date Added");
             ..append_text("Alphabetical");
-            ..set_active(0);
+            ..set_active(Some(0));
         };
 
         // Search bar beneath the category menu for doing name-based filters.
@@ -65,12 +65,12 @@ impl Main {
         );
 
         // Initializes the sample text buffer that the preview is generated from.
-        let buffer = gtk::TextBuffer::new(None);
+        let buffer = gtk::TextBuffer::new(None::<&gtk::TextTagTable>);
 
         {
             // Set the text once the UI has loaded, so that it is not hidden.
             let buffer = buffer.clone();
-            idle_add(move || {
+            glib::idle_add_local(move || {
                 buffer.set_text(
                     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor \
                      incididunt ut labore et dolore magna aliqua.",
@@ -82,7 +82,7 @@ impl Main {
         // And assigns that text buffer to this text view, so the user can enter text
         // into it.
         let sample_text = cascade! {
-            sample: gtk::TextView::new_with_buffer(&buffer);
+            sample: gtk::TextView::with_buffer(&buffer);
             ..set_wrap_mode(gtk::WrapMode::Word);
             | set_margin(&sample, 5, 5, 5, 5);
         };
@@ -102,11 +102,11 @@ impl Main {
             ..pack2(&rbox, true, true);
         };
 
-        let container = gtk::Paned::new(gtk::Orientation::Vertical);
-        container.pack1(&content, true, true);
-
         Main {
-            container,
+            container: cascade! {
+                gtk::Paned::new(gtk::Orientation::Vertical);
+                ..pack1(&content, true, true);
+            },
             categories: menu,
             fonts: Rc::new(fonts),
             context,

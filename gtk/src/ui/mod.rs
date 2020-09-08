@@ -13,7 +13,7 @@ use gtk;
 use gtk::WidgetExt;
 use webkit2gtk::*;
 
-use utils::{get_buffer, get_search};
+use crate::utils::{get_buffer, get_search};
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use std::sync::atomic::AtomicUsize;
@@ -38,7 +38,7 @@ impl App {
 
         let window = cascade! {
             gtk::Window::new(gtk::WindowType::Toplevel);
-            ..set_titlebar(header.as_ref());
+            ..set_titlebar(Some(header.as_ref()));
             ..set_title("Font Finder");
             | gtk::Window::set_default_icon_name("typecatcher");
             ..set_default_size(800, 600);

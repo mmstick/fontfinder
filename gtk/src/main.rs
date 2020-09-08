@@ -3,11 +3,6 @@
 
 #[macro_use]
 extern crate cascade;
-extern crate fontfinder;
-extern crate gio;
-extern crate glib;
-extern crate gtk;
-extern crate webkit2gtk;
 
 mod utils;
 mod ui;
@@ -15,7 +10,7 @@ mod ui;
 use fontfinder::fc_cache::fc_cache_event_loop;
 use fontfinder::{dirs, FontError};
 use fontfinder::fonts::{self, Sorting};
-use ui::{App, Connect, State};
+use self::ui::{App, Connect, State};
 use std::process;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};

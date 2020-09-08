@@ -1,4 +1,4 @@
-use utils::{set_class, set_margin};
+use crate::utils::{set_class, set_margin};
 use gtk::prelude::*;
 use gtk;
 use std::ops::Deref;
@@ -15,7 +15,7 @@ pub struct Header {
 
 macro_rules! button {
     ($label:expr) => {
-        gtk::Button::new_with_label($label)
+        gtk::Button::with_label($label)
     };
 }
 
@@ -42,18 +42,18 @@ impl Header {
         set_class(&uninstall, "destructive-action");
 
         // Add a font size spin button.
-        let font_size = gtk::SpinButton::new(&gtk::Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0), 0.1, 2);
-        let dark_preview = gtk::CheckButton::new_with_label("Dark Preview");
-        let show_installed = gtk::CheckButton::new_with_label("Installed");
+        let font_size = gtk::SpinButton::new(Some(&gtk::Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0)), 0.1, 2);
+        let dark_preview = gtk::CheckButton::with_label("Dark Preview");
+        let show_installed = gtk::CheckButton::with_label("Installed");
         show_installed.set_active(true);
 
         // The settings menu, contained within a vertical box.
         let menu_box = cascade! {
             menu_box: gtk::Box::new(gtk::Orientation::Vertical, 5);
-            ..pack_start(&gtk::Label::new("Show"), false, false, 0);
+            ..pack_start(&gtk::Label::new("Show".into()), false, false, 0);
             ..pack_start(&show_installed, false, false, 0);
             ..pack_start(&gtk::Separator::new(gtk::Orientation::Horizontal), false, false, 0);
-            ..pack_start(&gtk::Label::new("Preview"), false, false, 0);
+            ..pack_start(&gtk::Label::new("Preview".into()), false, false, 0);
             ..pack_start(&dark_preview, false, false, 0);
             | set_margin(&menu_box, 5, 5, 5, 5);
         };
@@ -68,8 +68,8 @@ impl Header {
         // Attach the popover to the settings menu button.
         let settings = cascade! {
             gtk::MenuButton::new();
-            ..set_image(&gtk::Image::new_from_icon_name("preferences-system", 0));
-            ..set_popover(&popover);
+            ..set_image(Some(&gtk::Image::from_icon_name(Some("preferences-system"), gtk::IconSize::from(0))));
+            ..set_popover(Some(&popover));
             ..set_use_popover(true);
         };
 
@@ -77,7 +77,7 @@ impl Header {
         let container = cascade! {
             gtk::HeaderBar::new();
             ..set_show_close_button(true);
-            ..set_title("Font Finder");
+            ..set_title("Font Finder".into());
             ..pack_start(&settings);
             ..pack_start(&show_installed);
             ..pack_start(&font_size);

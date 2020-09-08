@@ -103,10 +103,10 @@ impl Connect for Rc<App> {
         let app = self.clone();
         app.main.sort_by.clone().connect_changed(move |sort_by| {
             let sorting = match sort_by.get_active() {
-                0 => Sorting::Trending,
-                1 => Sorting::Popular,
-                2 => Sorting::DateAdded,
-                3 => Sorting::Alphabetical,
+                Some(0) => Sorting::Trending,
+                Some(1) => Sorting::Popular,
+                Some(2) => Sorting::DateAdded,
+                Some(3) => Sorting::Alphabetical,
                 _ => unreachable!("unknown sorting"),
             };
 
@@ -199,7 +199,7 @@ impl Connect for Rc<App> {
                     // Obtain the data relevant to the selected row, by it's ID.
                     let font = &app.main.fonts.get_rows()[id];
                     // Set the header bar's title the name of the font.
-                    app.header.set_title(font.family.as_str());
+                    app.header.set_title(Some(font.family.as_str()));
 
                     // If there is some sample text, update the font preview.
                     app.update_preview(font);
