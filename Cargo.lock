@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "fontfinder"
-version = "1.5.0"
+version = "2.0.0"
 dependencies = [
  "anyhow",
  "async-process",
@@ -264,7 +264,7 @@ dependencies = [
 
 [[package]]
 name = "fontfinder-gtk"
-version = "1.6.0"
+version = "2.0.0"
 dependencies = [
  "cascade",
  "flume",
