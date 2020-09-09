@@ -1,5 +1,5 @@
 use horrorshow::helper::doctype;
-use itertools::{sorted};
+use itertools::sorted;
 
 const FONT_URL: &str = "http://fonts.googleapis.com/css?family=";
 

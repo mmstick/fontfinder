@@ -15,3 +15,4 @@ glib = "0.10"
 gio = "0.9"
 gtk = { version = "0.9", features = ["v3_22"] }
 webkit2gtk = { version = "0.10", features = ["v2_16"] }
+flume = "0.9.0"

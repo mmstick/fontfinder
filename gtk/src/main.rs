@@ -4,17 +4,14 @@
 #[macro_use]
 extern crate cascade;
 
-mod utils;
 mod ui;
+mod utils;
 
-use fontfinder::fc_cache::fc_cache_event_loop;
+use self::ui::{App, Connect, Event, State};
 use fontfinder::dirs;
+use fontfinder::fc_cache::fc_cache_event_loop;
 use fontfinder::fonts::{self, Sorting};
-use self::ui::{App, Connect, State};
 use std::process;
-use std::rc::Rc;
-use std::sync::{Arc, RwLock};
-use std::sync::atomic::AtomicUsize;
 
 fn main() {
     glib::set_program_name("Font Finder".into());
@@ -39,32 +36,41 @@ fn main() {
     };
 
     // Grab the information on Google's archive of free fonts.
-    // I'm wrapping it in Arc so it can be shared across multiple closures.
     let fonts_archive = match fonts::obtain(Sorting::Trending) {
-        Ok(fonts_archive) => RwLock::new(fonts_archive),
+        Ok(fonts_archive) => fonts_archive,
         Err(why) => {
             eprintln!("failed to get font archive: {:?}", why);
             process::exit(1);
         }
     };
 
-    // Contains the ID of the currently-selected row, to cut down on lookups.
-    let row_id = AtomicUsize::new(0);
-
-    let app = {
-        // Collect a list of unique categories from that font list.
-        let categories = fonts_archive.read().unwrap().get_categories();
-
-        // Initializes the complete structure of the GTK application.
-        // Contains all relevant widgets that we will manipulate.
-        Rc::new(App::new(&fonts_archive.read().unwrap(), &categories))
-    };
-
-    let state = Arc::new(State {
+    // Initializes the complete structure of the GTK application.
+    // Contains all relevant widgets that we will manipulate.
+    let mut app = App::new(State {
         path,
         fonts_archive,
-        row_id,
+        row_id: 0,
     });
 
-    app.connect_events(state).then_execute();
+    let (tx, rx) = flume::unbounded();
+
+    glib::MainContext::default().spawn_local(async move {
+        app.connect_events(tx);
+        app.show();
+
+        while let Ok(event) = rx.recv_async().await {
+            match event {
+                Event::Filter => app.filter_categories(),
+                Event::Install => app.install(),
+                Event::Select(row) => app.select_row(row),
+                Event::Sort(sorting) => app.sort(sorting),
+                Event::UpdatePreview => app.update_preview(),
+                Event::Uninstall => app.uninstall(),
+            }
+        }
+    });
+
+    // Begins the main event loop of GTK, which will display the GUI and handle all
+    // the actions that were mapped to each of the widgets in the UI.
+    gtk::main();
 }

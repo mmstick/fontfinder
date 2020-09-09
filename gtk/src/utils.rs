@@ -12,7 +12,11 @@ pub(crate) fn get_buffer(buffer: &TextBuffer) -> Option<GString> {
 /// Obtains the value of the search entry from the UI
 pub(crate) fn get_search(search: &SearchEntry) -> Option<GString> {
     let text = search.get_text();
-    if text.is_empty() { None } else { Some(text) }
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
 }
 
 /// A simple convenience function for adding a style class to a widget.

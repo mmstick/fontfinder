@@ -1,10 +1,10 @@
+use super::FontList;
 use crate::utils::set_margin;
 use fontfinder::fonts::Font;
-use gtk::prelude::*;
 use gtk;
+use gtk::prelude::*;
 use std::rc::Rc;
 use webkit2gtk::*;
-use super::FontList;
 
 #[derive(Clone)]
 pub struct Main {

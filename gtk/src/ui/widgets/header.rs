@@ -1,16 +1,16 @@
 use crate::utils::{set_class, set_margin};
-use gtk::prelude::*;
 use gtk;
+use gtk::prelude::*;
 use std::ops::Deref;
 
 #[derive(Clone)]
 pub struct Header {
-    container:          gtk::HeaderBar,
-    pub font_size:      gtk::SpinButton,
-    pub install:        gtk::Button,
-    pub uninstall:      gtk::Button,
+    container: gtk::HeaderBar,
+    pub font_size: gtk::SpinButton,
+    pub install: gtk::Button,
+    pub uninstall: gtk::Button,
     pub show_installed: gtk::CheckButton,
-    pub dark_preview:   gtk::CheckButton,
+    pub dark_preview: gtk::CheckButton,
 }
 
 macro_rules! button {
@@ -42,7 +42,11 @@ impl Header {
         set_class(&uninstall, "destructive-action");
 
         // Add a font size spin button.
-        let font_size = gtk::SpinButton::new(Some(&gtk::Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0)), 0.1, 2);
+        let font_size = gtk::SpinButton::new(
+            Some(&gtk::Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0)),
+            0.1,
+            2,
+        );
         let dark_preview = gtk::CheckButton::with_label("Dark Preview");
         let show_installed = gtk::CheckButton::with_label("Installed");
         show_installed.set_active(true);

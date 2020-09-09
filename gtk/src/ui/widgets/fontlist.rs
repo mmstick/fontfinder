@@ -1,6 +1,6 @@
 use fontfinder::fonts::Font;
-use gtk::prelude::*;
 use gtk;
+use gtk::prelude::*;
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
 
@@ -42,7 +42,9 @@ impl FontList {
     }
 
     pub fn update(&self, fonts_archive: &[Font]) {
-        self.get_children().iter().for_each(|c| unsafe { c.destroy() });
+        self.get_children()
+            .iter()
+            .for_each(|c| unsafe { c.destroy() });
         let mut fonts = self.fonts.borrow_mut();
         fonts.clear();
 

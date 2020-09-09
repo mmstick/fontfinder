@@ -17,5 +17,5 @@ itertools = "0.9"
 lazy_static = "1.4"
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
-ureq = { version = "1.4.0", features = ["json"]}
-anyhow = "1.0.32"
+ureq = { version = "1.4", features = ["json"]}
+anyhow = "1.0"

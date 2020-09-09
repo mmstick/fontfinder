@@ -2,39 +2,44 @@ mod connected;
 mod main;
 mod widgets;
 
-pub use self::connected::{Connect, Connected};
-pub use self::widgets::{Header, FontList, FontRow};
+pub use self::connected::{Connect, Event};
 pub use self::main::Main;
-use fontfinder::dirs;
-use fontfinder::html;
-use fontfinder::fonts::FontsList;
-use gtk::prelude::*;
+pub use self::widgets::{FontList, FontRow, Header};
+use fontfinder::{
+    dirs,
+    fc_cache::RUN_FC_CACHE,
+    fonts::{FontsList, Sorting},
+    html,
+};
 use gtk;
+use gtk::prelude::*;
 use gtk::WidgetExt;
 use webkit2gtk::*;
 
 use crate::utils::{get_buffer, get_search};
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
 pub struct State {
-    pub fonts_archive: RwLock<FontsList>,
-    pub row_id: AtomicUsize,
+    pub fonts_archive: FontsList,
+    pub row_id: usize,
     pub path: PathBuf,
 }
 
-#[derive(Clone)]
 pub struct App {
     pub window: gtk::Window,
     pub header: Header,
     pub main: Main,
+    pub state: State,
 }
 
 impl App {
-    pub fn new(font_archive: &FontsList, categories: &[String]) -> App {
+    pub fn new(state: State) -> App {
+        // Collect a list of unique categories from that font list.
+        let categories = &state.fonts_archive.get_categories();
+
         let header = Header::new();
-        let main = Main::new(&font_archive.items, categories);
+        let main = Main::new(&state.fonts_archive.items, categories);
 
         let window = cascade! {
             gtk::Window::new(gtk::WindowType::Toplevel);
@@ -52,11 +57,32 @@ impl App {
         App {
             window,
             header,
-            main: main,
+            main,
+            state,
         }
     }
 
-    pub fn filter_categories(&self, path: &Path, fonts_archive: &FontsList) {
+    pub fn install(&self) {
+        let font = &self.main.fonts.get_rows()[self.state.row_id];
+        let mut string = Vec::new();
+        match self.state.fonts_archive.download(&mut string, &font.family) {
+            Ok(_) => {
+                self.header.install.set_visible(false);
+                self.header.uninstall.set_visible(true);
+                font.set_visible(self.header.show_installed.get_active());
+                RUN_FC_CACHE.store(true, Ordering::Relaxed);
+                eprintln!("{} installed", &font.family);
+            }
+            Err(why) => {
+                eprintln!("unable to install font: {}", why);
+            }
+        }
+    }
+
+    pub fn filter_categories(&self) {
+        let path = &self.state.path;
+        let fonts_archive = &self.state.fonts_archive;
+
         if let Some(category) = self.main.categories.get_active_text() {
             filter_category(
                 &category,
@@ -70,7 +96,86 @@ impl App {
         }
     }
 
-    pub fn update_preview(&self, font: &FontRow) {
+    pub fn select_row(&mut self, id: usize) {
+        // Store that ID in an atomic value, for future re-use by other closures.
+        self.state.row_id = id;
+
+        // Obtain the data relevant to the selected row, by it's ID.
+        let font = &self.main.fonts.get_rows()[id];
+
+        // Set the header bar's title the name of the font.
+        self.header.set_title(Some(font.family.as_str()));
+
+        // If there is some sample text, update the font preview.
+        self.update_preview();
+
+        // Then set the visibility of the Install & Uninstall buttons accordingly.
+        match dirs::font_cache() {
+            Ok(path) => {
+                // Obtain the font from the font archive, so that we may get the files.
+                let font = self.state.fonts_archive.get_family(&font.family).unwrap();
+
+                // This returns true if all variants of the font exists.
+                let font_exists = font
+                    .files
+                    .iter()
+                    .all(|(variant, uri)| dirs::font_exists(&path, &font.family, &variant, &uri));
+
+                self.header.install.set_visible(!font_exists);
+                self.header.uninstall.set_visible(font_exists);
+            }
+            Err(why) => {
+                // Write the error to stderr & the console.
+                eprintln!("unable to get font cache: {}", why);
+
+                self.header.install.set_visible(false);
+                self.header.uninstall.set_visible(false);
+            }
+        }
+    }
+
+    pub fn show(&self) {
+        // Shows the application window and all of the widgets owned by that window.
+        self.window.show_all();
+
+        // Additionally hides some widgets that should be hidden by default.
+        self.header.install.set_visible(false);
+        self.header.uninstall.set_visible(false);
+    }
+
+    pub fn sort(&mut self, sorting: Sorting) {
+        let fonts_archive = &mut self.state.fonts_archive;
+        *fonts_archive = match fontfinder::fonts::obtain(sorting) {
+            Ok(fonts_archive) => fonts_archive,
+            Err(why) => {
+                eprintln!("failed to get font archive: {}", why);
+                return;
+            }
+        };
+
+        self.main.fonts.update(&fonts_archive.items);
+        self.filter_categories();
+    }
+
+    pub fn uninstall(&self) {
+        let font = &self.main.fonts.get_rows()[self.state.row_id];
+        let mut string = Vec::new();
+        match self.state.fonts_archive.remove(&mut string, &font.family) {
+            Ok(_) => {
+                self.header.uninstall.set_visible(false);
+                self.header.install.set_visible(true);
+                RUN_FC_CACHE.store(true, Ordering::Relaxed);
+                eprintln!("{} uninstalled", &font.family);
+            }
+            Err(why) => {
+                eprintln!("unable to remove font: {}", why);
+            }
+        }
+    }
+
+    pub fn update_preview(&self) {
+        let font = &self.main.fonts.get_rows()[self.state.row_id];
+
         if let Some(sample_text) = get_buffer(&self.main.sample_buffer) {
             html::generate(
                 &font.family,

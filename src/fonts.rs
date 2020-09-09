@@ -1,5 +1,5 @@
-use anyhow::Context;
 use crate::dirs;
+use anyhow::Context;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::fs::{self, OpenOptions};
@@ -65,7 +65,9 @@ impl FontsList {
         dirs::recursively_create(&path)?;
 
         // Finds the given font in the font list and return it's reference.
-        let font = self.get_family(family).context("font family not found in font list")?;
+        let font = self
+            .get_family(family)
+            .context("font family not found in font list")?;
 
         // Download/install each variant of the given font family.
         for (variant, uri) in &font.files {
@@ -79,7 +81,7 @@ impl FontsList {
             let data = ureq::get(uri.as_str()).call();
 
             if let Some(error) = data.synthetic_error() {
-                return Err(anyhow!("{}", error)).context("failed to fetch font file")
+                return Err(anyhow!("{}", error)).context("failed to fetch font file");
             }
 
             // Then create that file for writing, and write the font's data to the file.
@@ -99,7 +101,9 @@ impl FontsList {
         let path = dirs::font_cache().context("error getting font directory")?;
 
         // Find the given font in the font list and return it's reference.
-        let font = self.get_family(family).context("font family not found in font list")?;
+        let font = self
+            .get_family(family)
+            .context("font family not found in font list")?;
 
         // Remove each variant of the given font family.
         for (variant, uri) in &font.files {
