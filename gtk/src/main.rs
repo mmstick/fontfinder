@@ -9,16 +9,12 @@ mod utils;
 
 use self::ui::{App, Connect, Event, State};
 use fontfinder::dirs;
-use fontfinder::fc_cache::fc_cache_event_loop;
 use fontfinder::fonts::{self, Sorting};
 use std::process;
 
 fn main() {
     glib::set_program_name("Font Finder".into());
     glib::set_application_name("Font Finder");
-
-    // Spawn a thread to wait for fc-cache events
-    fc_cache_event_loop();
 
     // Initialize GTK before proceeding.
     if gtk::init().is_err() {
@@ -44,17 +40,28 @@ fn main() {
         }
     };
 
+    let (tx, rx) = flume::unbounded();
+
     // Initializes the complete structure of the GTK application.
     // Contains all relevant widgets that we will manipulate.
     let mut app = App::new(State {
         path,
         fonts_archive,
         row_id: 0,
+        tx: tx.clone(),
     });
 
-    let (tx, rx) = flume::unbounded();
+    let (ntx, nrx) = flume::unbounded();
 
-    glib::MainContext::default().spawn_local(async move {
+    // For each trigger, update the font cache.
+    let font_cacher = async move {
+        while let Ok(()) = nrx.recv_async().await {
+            fontfinder::run_fc_cache().await;
+        }
+    };
+
+    // Async event loop for handling all application events;
+    let event_handler = async move {
         app.connect_events(tx);
         app.show();
 
@@ -66,8 +73,16 @@ fn main() {
                 Event::Sort(sorting) => app.sort(sorting),
                 Event::UpdatePreview => app.update_preview(),
                 Event::Uninstall => app.uninstall(),
+
+                Event::TriggerFontCache => {
+                    let _ = ntx.send(());
+                }
             }
         }
+    };
+
+    glib::MainContext::default().spawn_local(async move {
+        let _ = futures::future::join(font_cacher, event_handler).await;
     });
 
     // Begins the main event loop of GTK, which will display the GUI and handle all

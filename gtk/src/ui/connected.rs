@@ -12,6 +12,7 @@ pub enum Event {
     Sort(Sorting),
     UpdatePreview,
     Uninstall,
+    TriggerFontCache,
 }
 
 pub trait Connect<T> {

@@ -7,7 +7,6 @@ pub use self::main::Main;
 pub use self::widgets::{FontList, FontRow, Header};
 use fontfinder::{
     dirs,
-    fc_cache::RUN_FC_CACHE,
     fonts::{FontsList, Sorting},
     html,
 };
@@ -18,12 +17,12 @@ use webkit2gtk::*;
 
 use crate::utils::{get_buffer, get_search};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::Ordering;
 
 pub struct State {
     pub fonts_archive: FontsList,
     pub row_id: usize,
     pub path: PathBuf,
+    pub tx: flume::Sender<Event>,
 }
 
 pub struct App {
@@ -70,7 +69,8 @@ impl App {
                 self.header.install.set_visible(false);
                 self.header.uninstall.set_visible(true);
                 font.set_visible(self.header.show_installed.get_active());
-                RUN_FC_CACHE.store(true, Ordering::Relaxed);
+
+                let _ = self.state.tx.send(Event::TriggerFontCache);
                 eprintln!("{} installed", &font.family);
             }
             Err(why) => {
@@ -164,7 +164,7 @@ impl App {
             Ok(_) => {
                 self.header.uninstall.set_visible(false);
                 self.header.install.set_visible(true);
-                RUN_FC_CACHE.store(true, Ordering::Relaxed);
+                let _ = self.state.tx.send(Event::TriggerFontCache);
                 eprintln!("{} uninstalled", &font.family);
             }
             Err(why) => {
