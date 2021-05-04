@@ -78,15 +78,16 @@ impl FontsList {
             let _ = writer.write(format!("Installing '{:?}'\n", path).as_bytes());
 
             // GET the font variant from Google's servers.
-            let data = ureq::get(uri.as_str()).call();
-
-            if let Some(error) = data.synthetic_error() {
-                return Err(anyhow!("{}", error)).context("failed to fetch font file");
+            match ureq::get(uri.as_str()).call() {
+                Ok(data) => {
+                    // Then create that file for writing, and write the font's data to the file.
+                    let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
+                    io::copy(&mut data.into_reader(), &mut file)?;
+                }
+                Err(error) => {
+                    return Err(anyhow!("{}", error)).context("failed to fetch font file");
+                }
             }
-
-            // Then create that file for writing, and write the font's data to the file.
-            let mut file = OpenOptions::new().create(true).write(true).open(&path)?;
-            io::copy(&mut data.into_reader(), &mut file)?;
         }
 
         Ok(())
@@ -169,11 +170,13 @@ pub fn obtain(sort_by: Sorting) -> anyhow::Result<FontsList> {
         Sorting::Trending => URL_TRENDING.as_str(),
     };
 
-    let resp = ureq::get(url).call();
-    if let Some(error) = resp.synthetic_error() {
-        Err(anyhow!("{}", error)).context("failed to fetch fonts from server")
-    } else {
-        resp.into_json_deserialize::<FontsList>()
-            .context("failed to deserialize JSON response")
+    match ureq::get(url).call() {
+        Ok(resp) => {
+            resp.into_json::<FontsList>()
+                .context("failed to deserialize JSON response")
+        },
+        Err(error) => {
+            Err(anyhow!("{}", error)).context("failed to fetch fonts from server")
+        }
     }
 }

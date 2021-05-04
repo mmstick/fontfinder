@@ -53,20 +53,20 @@ impl Header {
 
         // The settings menu, contained within a vertical box.
         let menu_box = cascade! {
-            menu_box: gtk::Box::new(gtk::Orientation::Vertical, 5);
+            let menu_box = gtk::Box::new(gtk::Orientation::Vertical, 5);
             ..pack_start(&gtk::Label::new("Show".into()), false, false, 0);
             ..pack_start(&show_installed, false, false, 0);
             ..pack_start(&gtk::Separator::new(gtk::Orientation::Horizontal), false, false, 0);
             ..pack_start(&gtk::Label::new("Preview".into()), false, false, 0);
             ..pack_start(&dark_preview, false, false, 0);
-            | set_margin(&menu_box, 5, 5, 5, 5);
+            set_margin(&menu_box, 5, 5, 5, 5);
         };
 
         // Create the popover menu for the settings menu button.
         let popover = cascade! {
             gtk::PopoverMenu::new();
             ..add(&menu_box);
-            | menu_box.show_all();
+            menu_box.show_all();
         };
 
         // Attach the popover to the settings menu button.

@@ -25,17 +25,17 @@ impl Main {
 
         // The category menu for filtering based on category.
         let menu = cascade! {
-            menu: gtk::ComboBoxText::new();
-            | set_margin(&menu, 3, 5, 0, 5);
+            let menu = gtk::ComboBoxText::new();
+            set_margin(&menu, 3, 5, 0, 5);
             ..append_text("All");
-            | categories.iter().for_each(|c| menu.append_text(c.as_str()));
+            categories.iter().for_each(|c| menu.append_text(c.as_str()));
             ..set_active(Some(0));
         };
 
         // Ability to toggle between sorting methods.
         let sort_by = cascade! {
-            sort_by: gtk::ComboBoxText::new();
-            | set_margin(&sort_by, 3, 5, 0, 5);
+            let sort_by = gtk::ComboBoxText::new();
+            set_margin(&sort_by, 3, 5, 0, 5);
             ..append_text("Trending");
             ..append_text("Popular");
             ..append_text("Date Added");
@@ -82,9 +82,9 @@ impl Main {
         // And assigns that text buffer to this text view, so the user can enter text
         // into it.
         let sample_text = cascade! {
-            sample: gtk::TextView::with_buffer(&buffer);
+            let sample = gtk::TextView::with_buffer(&buffer);
             ..set_wrap_mode(gtk::WrapMode::Word);
-            | set_margin(&sample, 5, 5, 5, 5);
+            set_margin(&sample, 5, 5, 5, 5);
         };
 
         // Wraps up the sample text and it's associated preview as the right panel.

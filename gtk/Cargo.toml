@@ -9,11 +9,11 @@ version = "2.0.0"
 edition = "2018"
 
 [dependencies]
-cascade = "0.1"
+cascade = "1.0"
 fontfinder = { path = ".." }
 glib = "0.10"
 gio = "0.9"
 gtk = { version = "0.9", features = ["v3_22"] }
-webkit2gtk = { version = "0.10", features = ["v2_16"] }
-flume = "0.9"
+webkit2gtk = { version = "0.11", features = ["v2_16"] }
+flume = "0.10"
 futures = "0.3"
