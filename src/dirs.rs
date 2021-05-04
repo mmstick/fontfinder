@@ -1,4 +1,5 @@
 use anyhow::Context;
+use crate::fl;
 use std::env;
 use std::fs::DirBuilder;
 use std::io;
@@ -14,7 +15,7 @@ pub fn recursively_create(dir: &Path) -> io::Result<()> {
 pub fn font_cache() -> anyhow::Result<PathBuf> {
     env::home_dir()
         .map(|path| path.join(".local/share/fonts/"))
-        .context("home directory not found")
+        .with_context(|| fl!("home-not-found"))
 }
 
 /// Returns true if the supplied font variant is found within the font

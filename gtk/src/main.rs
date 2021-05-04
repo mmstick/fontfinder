@@ -4,15 +4,30 @@
 #[macro_use]
 extern crate cascade;
 
+mod localize;
 mod ui;
 mod utils;
 
 use self::ui::{App, Connect, Event, State};
 use fontfinder::dirs;
 use fontfinder::fonts::{self, Sorting};
+use i18n_embed::DesktopLanguageRequester;
 use std::process;
 
 fn main() {
+    let requested_languages = DesktopLanguageRequester::requested_languages();
+
+    let localizers = vec![
+        ("fontfinder-gtk", crate::localize::localizer()),
+        ("fontfinder", fontfinder::localize::localizer())
+    ];
+
+    for (lib, localizer) in localizers {
+        if let Err(error) = localizer.select(&requested_languages) {
+            eprintln!("Error while loading languages for {} {}", lib, error);
+        }
+    }
+
     glib::set_program_name("Font Finder".into());
     glib::set_application_name("Font Finder");
 

@@ -13,6 +13,7 @@ extern crate serde;
 pub mod dirs;
 pub mod fonts;
 pub mod html;
+pub mod localize;
 
 use async_process::Command;
 

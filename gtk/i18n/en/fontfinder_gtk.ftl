@@ -1,0 +1,11 @@
+button-dark-preview = Dark Preview
+button-install = Install
+button-show-installed = Show Installed
+button-uninstall = Uninstall
+category-all = All
+menu-preview = Preview
+menu-show = Show
+sort-by-alphabetical = Alphabetical
+sort-by-date-added = Date Added
+sort-by-popular = Popular
+sort-by-trending = Trending

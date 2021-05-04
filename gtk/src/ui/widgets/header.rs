@@ -1,3 +1,4 @@
+use crate::fl;
 use crate::utils::{set_class, set_margin};
 use gtk;
 use gtk::prelude::*;
@@ -35,7 +36,7 @@ impl Deref for Header {
 impl Header {
     pub fn new() -> Header {
         // Buttons for installing and uninstalling fonts.
-        let (install, uninstall) = (button!("Install"), button!("Uninstall"));
+        let (install, uninstall) = (button!(&fl!("button-install")), button!(&fl!("button-uninstall")));
 
         // Set styles for those buttons.
         set_class(&install, "suggested-action");
@@ -47,17 +48,17 @@ impl Header {
             0.1,
             2,
         );
-        let dark_preview = gtk::CheckButton::with_label("Dark Preview");
-        let show_installed = gtk::CheckButton::with_label("Installed");
+        let dark_preview = gtk::CheckButton::with_label(&fl!("button-dark-preview"));
+        let show_installed = gtk::CheckButton::with_label(&fl!("button-show-installed"));
         show_installed.set_active(true);
 
         // The settings menu, contained within a vertical box.
         let menu_box = cascade! {
             let menu_box = gtk::Box::new(gtk::Orientation::Vertical, 5);
-            ..pack_start(&gtk::Label::new("Show".into()), false, false, 0);
+            ..pack_start(&gtk::Label::new(Some(&fl!("menu-show"))), false, false, 0);
             ..pack_start(&show_installed, false, false, 0);
             ..pack_start(&gtk::Separator::new(gtk::Orientation::Horizontal), false, false, 0);
-            ..pack_start(&gtk::Label::new("Preview".into()), false, false, 0);
+            ..pack_start(&gtk::Label::new(Some(&fl!("menu-preview"))), false, false, 0);
             ..pack_start(&dark_preview, false, false, 0);
             set_margin(&menu_box, 5, 5, 5, 5);
         };

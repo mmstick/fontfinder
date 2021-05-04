@@ -1,4 +1,5 @@
 use super::FontList;
+use crate::fl;
 use crate::utils::set_margin;
 use fontfinder::fonts::Font;
 use gtk;
@@ -27,7 +28,7 @@ impl Main {
         let menu = cascade! {
             let menu = gtk::ComboBoxText::new();
             set_margin(&menu, 3, 5, 0, 5);
-            ..append_text("All");
+            ..append_text(&fl!("category-all"));
             categories.iter().for_each(|c| menu.append_text(c.as_str()));
             ..set_active(Some(0));
         };
@@ -36,10 +37,10 @@ impl Main {
         let sort_by = cascade! {
             let sort_by = gtk::ComboBoxText::new();
             set_margin(&sort_by, 3, 5, 0, 5);
-            ..append_text("Trending");
-            ..append_text("Popular");
-            ..append_text("Date Added");
-            ..append_text("Alphabetical");
+            ..append_text(&fl!("sort-by-trending"));
+            ..append_text(&fl!("sort-by-popular"));
+            ..append_text(&fl!("sort-by-date-added"));
+            ..append_text(&fl!("sort-by-alphabetical"));
             ..set_active(Some(0));
         };
 

@@ -1,4 +1,5 @@
 use crate::dirs;
+use crate::fl;
 use anyhow::Context;
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -59,7 +60,8 @@ impl FontsList {
     {
         // The base path of the local font directory will be used to construct future
         // file paths.
-        let path = dirs::font_cache().context("error getting font directory")?;
+        let path = dirs::font_cache()
+            .with_context(|| fl!("error-font-directory"))?;
 
         // Recursively creates the aforementioned path if it does not already exist.
         dirs::recursively_create(&path)?;
@@ -67,7 +69,7 @@ impl FontsList {
         // Finds the given font in the font list and return it's reference.
         let font = self
             .get_family(family)
-            .context("font family not found in font list")?;
+            .with_context(|| fl!("error-font-not-found"))?;
 
         // Download/install each variant of the given font family.
         for (variant, uri) in &font.files {
@@ -75,7 +77,7 @@ impl FontsList {
             let path = dirs::get_font_path(&path, family, &variant, &uri);
 
             // Writes information about what's happening to the UI's console.
-            let _ = writer.write(format!("Installing '{:?}'\n", path).as_bytes());
+            let _ = writer.write(format!("{}\n", fl!("info-installing", path = format!("{:?}", path))).as_bytes());
 
             // GET the font variant from Google's servers.
             match ureq::get(uri.as_str()).call() {
@@ -85,7 +87,7 @@ impl FontsList {
                     io::copy(&mut data.into_reader(), &mut file)?;
                 }
                 Err(error) => {
-                    return Err(anyhow!("{}", error)).context("failed to fetch font file");
+                    return Err(anyhow!("{}", error)).with_context(|| fl!("error-fetch-failed"));
                 }
             }
         }
@@ -99,24 +101,26 @@ impl FontsList {
         W: Write,
     {
         // Get the base directory of the local font directory
-        let path = dirs::font_cache().context("error getting font directory")?;
+        let path = dirs::font_cache().with_context(|| fl!("error-font-directory"))?;
 
         // Find the given font in the font list and return it's reference.
         let font = self
             .get_family(family)
-            .context("font family not found in font list")?;
+            .with_context(|| fl!("error-font-not-found"))?;
 
         // Remove each variant of the given font family.
         for (variant, uri) in &font.files {
             // Create a variant of the path with this variant's filename.
             let path = dirs::get_font_path(&path, family, &variant, &uri);
 
+            let path_str = format!("{:?}", path);
+
             // Writes information about what's happening to the UI's console.
-            let _ = writer.write(format!("Removing '{:?}'\n", path).as_bytes());
+            let _ = writer.write(format!("{}\n", fl!("info-removing", path = path_str.clone())).as_bytes());
 
             // Then remove that file, if it exists.
             if let Err(why) = fs::remove_file(&path) {
-                let msg = format!("Unable to remove '{:?}': {}\n", path, why);
+                let msg = format!("{}: {}\n", fl!("error-unable-to-remove", path = path_str), why);
                 let _ = writer.write(msg.as_bytes());
             }
         }
@@ -173,10 +177,10 @@ pub fn obtain(sort_by: Sorting) -> anyhow::Result<FontsList> {
     match ureq::get(url).call() {
         Ok(resp) => {
             resp.into_json::<FontsList>()
-                .context("failed to deserialize JSON response")
+                .with_context(|| fl!("error-deserialize"))
         },
         Err(error) => {
-            Err(anyhow!("{}", error)).context("failed to fetch fonts from server")
+            Err(anyhow!("{}", error)).with_context(|| fl!("error-fetch-failed"))
         }
     }
 }
