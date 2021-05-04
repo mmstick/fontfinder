@@ -32,3 +32,22 @@ sudo make install prefix=/usr/local
 ### Dark Preview
 
 ![Fourth Screenshot](screenshot04.png)
+
+## Translators
+
+Translators are welcome to submit translations directly as a pull request to this project. It is generally expected that your pull requests will contain a single commit for each language that was added or improved, using a syntax like so:
+
+```
+i18n(eo): Add Esperanto language support
+```
+
+```
+i18n(pl): Improvements to Polish language support
+```
+
+Translation files for the GTK application can be found [here](./gtk/i18n/) and [here](./i18n/). We are using [Project Fluent](https://projectfluent.org) for our translations, which should be easier than working with gettext.
+
+### Supported Languages
+
+- [English](./gtk/i18n/en/)
+- [Polish](./gtk/i18n/pl/)
