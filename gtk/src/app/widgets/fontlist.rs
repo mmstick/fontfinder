@@ -1,3 +1,6 @@
+use crate::utils::block_on;
+use crate::Event;
+
 use fontfinder::fonts::Font;
 use gtk;
 use gtk::prelude::*;
@@ -11,17 +14,18 @@ pub struct FontList {
     fonts: RefCell<Vec<FontRow>>,
 }
 
-impl Deref for FontList {
-    type Target = gtk::ListBox;
-    fn deref(&self) -> &Self::Target {
-        &self.container
-    }
-}
-
 impl FontList {
-    pub fn new(fonts_archive: &[Font]) -> FontList {
-        let container = gtk::ListBox::new();
+    pub fn new(fonts_archive: &[Font], tx: async_channel::Sender<Event>) -> FontList {
         let fonts = Vec::with_capacity(fonts_archive.len());
+
+        let container = cascade! {
+            gtk::ListBox::new();
+            ..connect_row_selected(move |_, row| {
+                if let Some(row) = row.as_ref() {
+                    let _ = block_on(tx.send(Event::Select(row.get_index() as usize)));
+                }
+            });
+        };
 
         // Allows the font list box to scroll
         let scroller = cascade! {
@@ -42,7 +46,8 @@ impl FontList {
     }
 
     pub fn update(&self, fonts_archive: &[Font]) {
-        self.get_children()
+        self.container
+            .get_children()
             .iter()
             .for_each(|c| unsafe { c.destroy() });
         let mut fonts = self.fonts.borrow_mut();
@@ -54,11 +59,11 @@ impl FontList {
                 font.family.clone(),
                 font.files.keys().cloned().collect(),
             );
-            self.insert(&row.container, -1);
+            self.container.insert(&row.container, -1);
             fonts.push(row);
         }
 
-        self.show_all();
+        self.container.show_all();
     }
 
     pub fn get_rows<'a>(&'a self) -> Ref<'a, Vec<FontRow>> {
@@ -111,7 +116,6 @@ impl FontRow {
     }
 
     pub fn contains(&self, pattern: &str) -> bool {
-        // TODO: do this without making any allocations.
         self.family.to_lowercase().contains(&pattern.to_lowercase())
     }
 }

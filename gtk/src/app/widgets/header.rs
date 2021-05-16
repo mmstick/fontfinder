@@ -1,5 +1,6 @@
-use crate::fl;
-use crate::utils::{set_class, set_margin};
+use crate::utils::{block_on, set_class, set_margin};
+use crate::{fl, Event};
+use async_channel::Sender;
 use gtk;
 use gtk::prelude::*;
 use std::ops::Deref;
@@ -12,12 +13,6 @@ pub struct Header {
     pub uninstall: gtk::Button,
     pub show_installed: gtk::CheckButton,
     pub dark_preview: gtk::CheckButton,
-}
-
-macro_rules! button {
-    ($label:expr) => {
-        gtk::Button::with_label($label)
-    };
 }
 
 impl AsRef<gtk::HeaderBar> for Header {
@@ -34,23 +29,49 @@ impl Deref for Header {
 }
 
 impl Header {
-    pub fn new() -> Header {
-        // Buttons for installing and uninstalling fonts.
-        let (install, uninstall) = (button!(&fl!("button-install")), button!(&fl!("button-uninstall")));
+    pub fn new(tx: Sender<Event>) -> Header {
+        let install = cascade! {
+            let install = gtk::Button::with_label(&fl!("button-install"));
+            ..connect_clicked(closure!(clone tx, |_| {
+                let _ = block_on(tx.send(Event::Install));
+            }));
+            set_class(&install, "suggested-action");
+        };
 
-        // Set styles for those buttons.
-        set_class(&install, "suggested-action");
-        set_class(&uninstall, "destructive-action");
+        let uninstall = cascade! {
+            let uninstall = gtk::Button::with_label(&fl!("button-uninstall"));
+            ..connect_clicked(closure!(clone tx, |_| {
+                let _ = block_on(tx.send(Event::Uninstall));
+            }));
+            set_class(&uninstall, "destructive-action");
+        };
 
         // Add a font size spin button.
-        let font_size = gtk::SpinButton::new(
-            Some(&gtk::Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0)),
-            0.1,
-            2,
-        );
-        let dark_preview = gtk::CheckButton::with_label(&fl!("button-dark-preview"));
-        let show_installed = gtk::CheckButton::with_label(&fl!("button-show-installed"));
-        show_installed.set_active(true);
+        let font_size = cascade! {
+            gtk::SpinButton::new(
+                Some(&gtk::Adjustment::new(1.5, 1.0, 50.0, 0.25, 0.0, 0.0)),
+                0.1,
+                2,
+            );
+            ..connect_property_value_notify(closure!(clone tx, |_| {
+                let _ = block_on(tx.send(Event::UpdatePreview));
+            }));
+        };
+
+        let dark_preview = cascade! {
+            gtk::CheckButton::with_label(&fl!("button-dark-preview"));
+            ..connect_toggled(closure!(clone tx, |_| {
+                let _ = block_on(tx.send(Event::UpdatePreview));
+            }));
+        };
+
+        let show_installed = cascade! {
+            gtk::CheckButton::with_label(&fl!("button-show-installed"));
+            ..set_active(true);
+            ..connect_toggled(move |_| {
+                let _ = block_on(tx.send(Event::Filter));
+            });
+        };
 
         // The settings menu, contained within a vertical box.
         let menu_box = cascade! {

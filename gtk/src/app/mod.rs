@@ -1,13 +1,13 @@
-mod connected;
 mod main;
 mod widgets;
 
-pub use self::connected::{Connect, Event};
 pub use self::main::Main;
 pub use self::widgets::{FontList, FontRow, Header};
+
+use async_channel::Sender;
 use fontfinder::{
     dirs,
-    fonts::{FontsList, Sorting},
+    fonts::{self, FontsList, Sorting},
     html,
 };
 use gtk;
@@ -15,36 +15,70 @@ use gtk::prelude::*;
 use gtk::WidgetExt;
 use webkit2gtk::*;
 
-use crate::utils::{get_buffer, get_search};
+use crate::utils::{get_buffer, get_search, spawn_local};
 use std::path::{Path, PathBuf};
 
+pub enum Event {
+    Filter,
+    Install,
+    Select(usize),
+    Sort(Sorting),
+    UpdatePreview,
+    Uninstall,
+    TriggerFontCache,
+}
+
 pub struct State {
-    pub fonts_archive: FontsList,
-    pub row_id: usize,
+    pub fonts: FontsList,
     pub path: PathBuf,
-    pub tx: flume::Sender<Event>,
+    pub row_id: usize,
+    pub tx: async_channel::Sender<Event>,
 }
 
 pub struct App {
-    pub window: gtk::Window,
+    window: gtk::Window,
     pub header: Header,
     pub main: Main,
     pub state: State,
 }
 
 impl App {
-    pub fn new(state: State) -> App {
-        // Collect a list of unique categories from that font list.
-        let categories = &state.fonts_archive.get_categories();
+    pub fn new(tx: Sender<Event>) -> App {
+        // Grabs the local font directory, which is "~/.local/share/fonts/"
+        let path = match dirs::font_cache() {
+            Ok(path) => path,
+            Err(why) => {
+                eprintln!("{}", why);
+                std::process::exit(1);
+            }
+        };
 
-        let header = Header::new();
-        let main = Main::new(&state.fonts_archive.items, categories);
+        // Grab the information on Google's archive of free fonts.
+        let fonts = match fonts::obtain(Sorting::Trending) {
+            Ok(fonts) => fonts,
+            Err(why) => {
+                eprintln!("failed to get font archive: {:?}", why);
+                std::process::exit(1);
+            }
+        };
+
+        let state = State {
+            fonts,
+            row_id: 0,
+            path,
+            tx: tx.clone(),
+        };
+
+        // Collect a list of unique categories from that font list.
+        let categories = &state.fonts.get_categories();
+
+        let header = Header::new(tx.clone());
+        let main = Main::new(&state.fonts.items, categories, tx.clone());
 
         let window = cascade! {
             gtk::Window::new(gtk::WindowType::Toplevel);
             ..set_titlebar(Some(header.as_ref()));
             ..set_title("Font Finder");
-            gtk::Window::set_default_icon_name("typecatcher");
             ..set_default_size(800, 600);
             ..add(&main.container);
             ..connect_delete_event(move |_, _| {
@@ -53,24 +87,34 @@ impl App {
             });
         };
 
-        App {
+        gtk::Window::set_default_icon_name("typecatcher");
+
+        let app = App {
             window,
             header,
             main,
             state,
-        }
+        };
+
+        app.show();
+
+        app
     }
 
     pub fn install(&self) {
         let font = &self.main.fonts.get_rows()[self.state.row_id];
         let mut string = Vec::new();
-        match self.state.fonts_archive.download(&mut string, &font.family) {
+        match self.state.fonts.download(&mut string, &font.family) {
             Ok(_) => {
                 self.header.install.set_visible(false);
                 self.header.uninstall.set_visible(true);
                 font.set_visible(self.header.show_installed.get_active());
 
-                let _ = self.state.tx.send(Event::TriggerFontCache);
+                let tx = self.state.tx.clone();
+                let _ = spawn_local(async move {
+                    let _ = tx.send(Event::TriggerFontCache).await;
+                });
+
                 eprintln!("{} installed", &font.family);
             }
             Err(why) => {
@@ -81,7 +125,7 @@ impl App {
 
     pub fn filter_categories(&self) {
         let path = &self.state.path;
-        let fonts_archive = &self.state.fonts_archive;
+        let fonts = &self.state.fonts;
 
         if let Some(category) = self.main.categories.get_active_text() {
             filter_category(
@@ -89,8 +133,7 @@ impl App {
                 get_search(&self.main.search).as_ref().map(|x| x.as_str()),
                 &self.main.fonts.get_rows(),
                 |family| {
-                    self.header.show_installed.get_active()
-                        || !is_installed(fonts_archive, family, path)
+                    self.header.show_installed.get_active() || !is_installed(fonts, family, path)
                 },
             );
         }
@@ -113,7 +156,7 @@ impl App {
         match dirs::font_cache() {
             Ok(path) => {
                 // Obtain the font from the font archive, so that we may get the files.
-                let font = self.state.fonts_archive.get_family(&font.family).unwrap();
+                let font = self.state.fonts.get_family(&font.family).unwrap();
 
                 // This returns true if all variants of the font exists.
                 let font_exists = font
@@ -144,27 +187,32 @@ impl App {
     }
 
     pub fn sort(&mut self, sorting: Sorting) {
-        let fonts_archive = &mut self.state.fonts_archive;
-        *fonts_archive = match fontfinder::fonts::obtain(sorting) {
-            Ok(fonts_archive) => fonts_archive,
+        let fonts = &mut self.state.fonts;
+        *fonts = match fontfinder::fonts::obtain(sorting) {
+            Ok(fonts) => fonts,
             Err(why) => {
                 eprintln!("failed to get font archive: {}", why);
                 return;
             }
         };
 
-        self.main.fonts.update(&fonts_archive.items);
+        self.main.fonts.update(&fonts.items);
         self.filter_categories();
     }
 
     pub fn uninstall(&self) {
         let font = &self.main.fonts.get_rows()[self.state.row_id];
         let mut string = Vec::new();
-        match self.state.fonts_archive.remove(&mut string, &font.family) {
+        match self.state.fonts.remove(&mut string, &font.family) {
             Ok(_) => {
                 self.header.uninstall.set_visible(false);
                 self.header.install.set_visible(true);
-                let _ = self.state.tx.send(Event::TriggerFontCache);
+
+                let tx = self.state.tx.clone();
+                let _ = spawn_local(async move {
+                    let _ = tx.send(Event::TriggerFontCache).await;
+                });
+
                 eprintln!("{} uninstalled", &font.family);
             }
             Err(why) => {

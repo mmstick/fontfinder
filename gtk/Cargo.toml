@@ -9,8 +9,9 @@ version = "2.0.0"
 edition = "2018"
 
 [dependencies]
+async-channel = "1.6"
 cascade = "1.0"
-flume = "0.10"
+closure = "0.3"
 fontfinder = { path = ".." }
 futures = "0.3"
 gio = "0.9"

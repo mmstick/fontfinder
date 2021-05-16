@@ -1,7 +1,8 @@
 use super::FontList;
-use crate::fl;
-use crate::utils::set_margin;
-use fontfinder::fonts::Font;
+use crate::utils::{block_on, set_margin};
+use crate::{fl, Event};
+use async_channel::Sender;
+use fontfinder::fonts::{Font, Sorting};
 use gtk;
 use gtk::prelude::*;
 use std::rc::Rc;
@@ -21,8 +22,8 @@ pub struct Main {
 }
 
 impl Main {
-    pub fn new(fonts_archive: &[Font], categories: &[String]) -> Main {
-        let fonts = FontList::new(fonts_archive);
+    pub fn new(fonts_archive: &[Font], categories: &[String], tx: Sender<Event>) -> Main {
+        let fonts = FontList::new(fonts_archive, tx.clone());
 
         // The category menu for filtering based on category.
         let menu = cascade! {
@@ -31,6 +32,9 @@ impl Main {
             ..append_text(&fl!("category-all"));
             categories.iter().for_each(|c| menu.append_text(c.as_str()));
             ..set_active(Some(0));
+            ..connect_changed(closure!(clone tx, |_| {
+                let _ = block_on(tx.send(Event::Filter));
+            }));
         };
 
         // Ability to toggle between sorting methods.
@@ -42,11 +46,27 @@ impl Main {
             ..append_text(&fl!("sort-by-date-added"));
             ..append_text(&fl!("sort-by-alphabetical"));
             ..set_active(Some(0));
+            ..connect_changed(closure!(clone tx, |sort_by| {
+                let event = Event::Sort(match sort_by.get_active() {
+                    Some(0) => Sorting::Trending,
+                    Some(1) => Sorting::Popular,
+                    Some(2) => Sorting::DateAdded,
+                    Some(3) => Sorting::Alphabetical,
+                    _ => unreachable!("unknown sorting"),
+                });
+
+                let _ = block_on(tx.send(event));
+            }));
         };
 
         // Search bar beneath the category menu for doing name-based filters.
-        let search = gtk::SearchEntry::new();
-        set_margin(&search, 3, 5, 0, 5);
+        let search = cascade! {
+            let search = gtk::SearchEntry::new();
+            set_margin(&search, 3, 5, 0, 5);
+            ..connect_search_changed(closure!(clone tx, |_| {
+                let _ = block_on(tx.send(Event::Filter));
+            }));
+        };
 
         // Construct the left pane's box
         let lbox = cascade! {
@@ -66,7 +86,12 @@ impl Main {
         );
 
         // Initializes the sample text buffer that the preview is generated from.
-        let buffer = gtk::TextBuffer::new(None::<&gtk::TextTagTable>);
+        let buffer = cascade! {
+            gtk::TextBuffer::new(None::<&gtk::TextTagTable>);
+            ..connect_changed(closure!(clone tx, |_| {
+                let _ = block_on(tx.send(Event::UpdatePreview));
+            }));
+        };
 
         {
             // Set the text once the UI has loaded, so that it is not hidden.
