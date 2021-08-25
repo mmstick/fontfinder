@@ -73,7 +73,7 @@ impl FontsList {
         // Download/install each variant of the given font family.
         for (variant, uri) in &font.files {
             // Create a variant of the path with this variant's filename.
-            let path = dirs::get_font_path(&path, family, &variant, &uri);
+            let path = dirs::get_font_path(&path, family, variant, uri);
 
             // Writes information about what's happening to the UI's console.
             let _ = writer.write(
@@ -112,7 +112,7 @@ impl FontsList {
         // Remove each variant of the given font family.
         for (variant, uri) in &font.files {
             // Create a variant of the path with this variant's filename.
-            let path = dirs::get_font_path(&path, family, &variant, &uri);
+            let path = dirs::get_font_path(&path, family, variant, uri);
 
             let path_str = format!("{:?}", path);
 
