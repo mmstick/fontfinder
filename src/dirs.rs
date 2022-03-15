@@ -1,6 +1,7 @@
+extern crate dirs;
+
 use crate::fl;
 use anyhow::Context;
-use std::env;
 use std::fs::DirBuilder;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -13,7 +14,7 @@ pub fn recursively_create(dir: &Path) -> io::Result<()> {
 /// Obtains the path of the local font share, based on the current user's home
 /// directory.
 pub fn font_cache() -> anyhow::Result<PathBuf> {
-    env::home_dir()
+    dirs::home_dir()
         .map(|path| path.join(".local/share/fonts/"))
         .with_context(|| fl!("home-not-found"))
 }
