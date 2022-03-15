@@ -51,5 +51,6 @@ Translation files for the GTK application can be found [here](./i18n/). We are u
 
 - [English](./gtk/i18n/en/)
 - [French](./gtk/i18n/fr/)
+- [German](./gtk/i18n/de/)
 - [Polish](./gtk/i18n/pl/)
 - [Spanish](./gtk/i18n/es/)
