@@ -10,10 +10,10 @@ use fontfinder::{
     fonts::{self, FontsList, Sorting},
     html,
 };
-use gtk;
+
 use gtk::prelude::*;
-use gtk::WidgetExt;
-use webkit2gtk::*;
+use gtk::traits::WidgetExt;
+use webkit2gtk::WebViewExt;
 
 use crate::utils::{get_buffer, get_search, spawn_local};
 use std::path::{Path, PathBuf};
@@ -48,7 +48,7 @@ impl App {
         let path = match dirs::font_cache() {
             Ok(path) => path,
             Err(why) => {
-                eprintln!("{}", why);
+                eprintln!("{why}");
                 std::process::exit(1);
             }
         };
@@ -57,7 +57,7 @@ impl App {
         let fonts = match fonts::obtain(Sorting::Trending) {
             Ok(fonts) => fonts,
             Err(why) => {
-                eprintln!("failed to get font archive: {:?}", why);
+                eprintln!("failed to get font archive: {why:?}");
                 std::process::exit(1);
             }
         };
@@ -108,7 +108,7 @@ impl App {
             Ok(_) => {
                 self.header.install.set_visible(false);
                 self.header.uninstall.set_visible(true);
-                font.set_visible(self.header.show_installed.get_active());
+                font.set_visible(self.header.show_installed.is_active());
 
                 let tx = self.state.tx.clone();
                 let _ = spawn_local(async move {
@@ -127,13 +127,13 @@ impl App {
         let path = &self.state.path;
         let fonts = &self.state.fonts;
 
-        if let Some(category) = self.main.categories.get_active_text() {
+        if let Some(category) = self.main.categories.active_text() {
             filter_category(
                 &category,
                 get_search(&self.main.search).as_ref().map(|x| x.as_str()),
                 &self.main.fonts.get_rows(),
                 |family| {
-                    self.header.show_installed.get_active() || !is_installed(fonts, family, path)
+                    self.header.show_installed.is_active() || !is_installed(fonts, family, path)
                 },
             );
         }
@@ -191,7 +191,7 @@ impl App {
         *fonts = match fontfinder::fonts::obtain(sorting) {
             Ok(fonts) => fonts,
             Err(why) => {
-                eprintln!("failed to get font archive: {}", why);
+                eprintln!("failed to get font archive: {why}");
                 return;
             }
         };
@@ -216,7 +216,7 @@ impl App {
                 eprintln!("{} uninstalled", &font.family);
             }
             Err(why) => {
-                eprintln!("unable to remove font: {}", why);
+                eprintln!("unable to remove font: {why}");
             }
         }
     }
@@ -228,9 +228,9 @@ impl App {
             html::generate(
                 &font.family,
                 &font.variants,
-                self.header.font_size.get_value(),
+                self.header.font_size.value(),
                 &sample_text[..],
-                self.header.dark_preview.get_active(),
+                self.header.dark_preview.is_active(),
                 |html| self.main.view.load_html(html, None),
             );
         }
@@ -249,7 +249,7 @@ where
             && search.as_ref().map_or(true, |s| font.contains(s));
 
         font.set_visible(visible && installed(&font.family));
-    })
+    });
 }
 
 /// Evaluates whether each variant of a given font family is locally installed.

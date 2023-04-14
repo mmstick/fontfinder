@@ -22,14 +22,14 @@ where
 
 /// Obtains the entire inner string of a given text buffer.
 pub fn get_buffer(buffer: &TextBuffer) -> Option<GString> {
-    let start = buffer.get_start_iter();
-    let end = buffer.get_end_iter();
-    buffer.get_text(&start, &end, true)
+    let start = buffer.start_iter();
+    let end = buffer.end_iter();
+    buffer.text(&start, &end, true)
 }
 
 /// Obtains the value of the search entry from the UI
 pub fn get_search(search: &SearchEntry) -> Option<GString> {
-    let text = search.get_text();
+    let text = search.text();
     if text.is_empty() {
         None
     } else {
@@ -39,7 +39,7 @@ pub fn get_search(search: &SearchEntry) -> Option<GString> {
 
 /// A simple convenience function for adding a style class to a widget.
 pub fn set_class<W: WidgetExt>(widget: &W, class: &str) {
-    widget.get_style_context().add_class(class);
+    widget.style_context().add_class(class);
 }
 
 pub fn set_margin<W: WidgetExt>(widget: &W, t: i32, r: i32, b: i32, l: i32) {

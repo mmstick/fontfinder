@@ -9,39 +9,24 @@ use std::io::{self, Write};
 const API_KEY: &str = "AIzaSyDpvpba_5RvJSvmXEJS7gZDezDaMlVTo4c";
 
 lazy_static! {
-    static ref URL_ALPHA: String = {
-        format!(
-            "https://www.googleapis.com/webfonts/v1/webfonts?sort=alpha&key={}",
-            API_KEY
-        )
-    };
+    static ref URL_ALPHA: String =
+        format!("https://www.googleapis.com/webfonts/v1/webfonts?sort=alpha&key={API_KEY}");
 }
 
 lazy_static! {
-    static ref URL_DATE: String = {
-        format!(
-            "https://www.googleapis.com/webfonts/v1/webfonts?sort=date&key={}",
-            API_KEY
-        )
-    };
+    static ref URL_DATE: String =
+        format!("https://www.googleapis.com/webfonts/v1/webfonts?sort=date&key={API_KEY}");
 }
 
 lazy_static! {
     static ref URL_POPULARITY: String = {
-        format!(
-            "https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key={}",
-            API_KEY
-        )
+        format!("https://www.googleapis.com/webfonts/v1/webfonts?sort=popularity&key={API_KEY}")
     };
 }
 
 lazy_static! {
-    static ref URL_TRENDING: String = {
-        format!(
-            "https://www.googleapis.com/webfonts/v1/webfonts?sort=trending&key={}",
-            API_KEY
-        )
-    };
+    static ref URL_TRENDING: String =
+        format!("https://www.googleapis.com/webfonts/v1/webfonts?sort=trending&key={API_KEY}");
 }
 
 /// The JSON response from Google that contains information on Google's font

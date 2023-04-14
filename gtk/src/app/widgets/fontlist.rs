@@ -2,7 +2,6 @@ use crate::utils::block_on;
 use crate::Event;
 
 use fontfinder::fonts::Font;
-use gtk;
 use gtk::prelude::*;
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
@@ -22,18 +21,18 @@ impl FontList {
             gtk::ListBox::new();
             ..connect_row_selected(move |_, row| {
                 if let Some(row) = row.as_ref() {
-                    let _ = block_on(tx.send(Event::Select(row.get_index() as usize)));
+                    let _ = block_on(tx.send(Event::Select(row.index() as usize)));
                 }
             });
         };
 
         // Allows the font list box to scroll
-        let scroller = cascade! {
-            gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None);
-            ..set_property_hscrollbar_policy(gtk::PolicyType::Never);
-            ..set_min_content_width(200);
-            ..add(&container);
-        };
+        let scroller = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .min_content_width(200)
+            .build();
+
+        scroller.add(&container);
 
         let list = FontList {
             container,
@@ -47,7 +46,7 @@ impl FontList {
 
     pub fn update(&self, fonts_archive: &[Font]) {
         self.container
-            .get_children()
+            .children()
             .iter()
             .for_each(|c| unsafe { c.destroy() });
         let mut fonts = self.fonts.borrow_mut();
@@ -66,7 +65,7 @@ impl FontList {
         self.container.show_all();
     }
 
-    pub fn get_rows<'a>(&'a self) -> Ref<'a, Vec<FontRow>> {
+    pub fn get_rows(&self) -> Ref<Vec<FontRow>> {
         self.fonts.borrow()
     }
 }

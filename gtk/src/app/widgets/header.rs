@@ -1,7 +1,6 @@
 use crate::utils::{block_on, set_class, set_margin};
 use crate::{fl, Event};
 use async_channel::Sender;
-use gtk;
 use gtk::prelude::*;
 use std::ops::Deref;
 
@@ -53,7 +52,7 @@ impl Header {
                 0.1,
                 2,
             );
-            ..connect_property_value_notify(closure!(clone tx, |_| {
+            ..connect_value_notify(closure!(clone tx, |_| {
                 let _ = block_on(tx.send(Event::UpdatePreview));
             }));
         };

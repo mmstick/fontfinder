@@ -1,5 +1,4 @@
 #![allow(unknown_lints)]
-#![allow(option_map_unit_fn)]
 
 #[macro_use]
 extern crate cascade;
@@ -24,7 +23,7 @@ fn main() {
 
     for (lib, localizer) in localizers {
         if let Err(error) = localizer.select(&requested_languages) {
-            eprintln!("Error while loading languages for {} {}", lib, error);
+            eprintln!("Error while loading languages for {lib} {error}");
         }
     }
 

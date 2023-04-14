@@ -3,10 +3,9 @@ use crate::utils::{block_on, set_margin};
 use crate::{fl, Event};
 use async_channel::Sender;
 use fontfinder::fonts::{Font, Sorting};
-use gtk;
 use gtk::prelude::*;
 use std::rc::Rc;
-use webkit2gtk::*;
+use webkit2gtk::{glib, UserContentManager, WebContext, WebView, WebViewExtManual};
 
 #[derive(Clone)]
 pub struct Main {
@@ -47,7 +46,7 @@ impl Main {
             ..append_text(&fl!("sort-by-alphabetical"));
             ..set_active(Some(0));
             ..connect_changed(closure!(clone tx, |sort_by| {
-                let event = Event::Sort(match sort_by.get_active() {
+                let event = Event::Sort(match sort_by.active() {
                     Some(0) => Sorting::Trending,
                     Some(1) => Sorting::Popular,
                     Some(2) => Sorting::DateAdded,
@@ -79,7 +78,7 @@ impl Main {
         };
 
         // Initializes the webkit2gtk preview that will display the fonts.
-        let context = WebContext::get_default().unwrap();
+        let context = WebContext::default().unwrap();
         let view = WebView::new_with_context_and_user_content_manager(
             &context,
             &UserContentManager::new(),
